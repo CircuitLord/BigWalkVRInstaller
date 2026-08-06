@@ -15,15 +15,27 @@ namespace BigWalkVRInstaller.Services
 
         public static string ExePath => Process.GetCurrentProcess().MainModule.FileName;
 
-        // delete leftover renamed exe from a previous update
+        // delete leftover renamed exe from a previous update, the old process may still hold it so retry briefly
         public static void CleanupOldExe()
         {
-            try
+            var dir = Path.GetDirectoryName(ExePath);
+            Task.Run(async () =>
             {
-                foreach (var old in Directory.GetFiles(Path.GetDirectoryName(ExePath), "*" + OldSuffix))
-                    File.Delete(old);
-            }
-            catch { } // still locked by exiting process, next launch gets it
+                for (var attempt = 0; attempt < 12; attempt++)
+                {
+                    string[] leftovers;
+                    try { leftovers = Directory.GetFiles(dir, "*" + OldSuffix); }
+                    catch { return; }
+                    if (leftovers.Length == 0) return;
+
+                    foreach (var old in leftovers)
+                    {
+                        try { File.Delete(old); }
+                        catch { } // still locked, try again next tick
+                    }
+                    await Task.Delay(500);
+                }
+            });
         }
 
         public static bool IsUpdateAvailable(ReleaseInfo mgr) =>

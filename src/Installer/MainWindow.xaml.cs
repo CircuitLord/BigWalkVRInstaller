@@ -47,6 +47,14 @@ namespace BigWalkVRInstaller
             if (AppSettings.LoadError != null)
                 Status($"Settings load failed, using defaults: {AppSettings.LoadError}", true);
 
+            // older settings files hold the raw registry path, fix the casing on the way in
+            var stored = GameLocator.Canonical(_settings.GamePath);
+            if (stored != _settings.GamePath)
+            {
+                _settings.GamePath = stored;
+                _settings.Save();
+            }
+
             if (!GameLocator.IsValidGamePath(_settings.GamePath))
             {
                 _settings.GamePath = GameLocator.DetectGamePath();
@@ -55,15 +63,15 @@ namespace BigWalkVRInstaller
                     _settings.Save();
                     Status($"Found Big Walk at {_settings.GamePath}");
                 }
-                else Status("Couldn't find Big Walk. Press Change in step 1 to pick the folder.", true);
+                else Status("Couldn't find Big Walk, press Change in step 1 to pick the folder", true);
             }
 
             await Refresh();
             var vr = _core.FirstOrDefault();
             if (vr == null) return;
-            if (vr.CanUpdate) Status($"An update to v{vr.Remote.version} is available.");
-            else if (vr.IsInstalled) Status("Everything is up to date.");
-            else Status("Follow the steps to install.");
+            if (vr.CanUpdate) Status($"An update to v{vr.Remote.version} is available");
+            else if (vr.IsInstalled) Status("Everything is up to date");
+            else Status("Follow the steps to install");
         }
 
         bool HasGame => GameLocator.IsValidGamePath(_settings?.GamePath);
@@ -102,9 +110,9 @@ namespace BigWalkVRInstaller
 
             OfflineNotice.Visibility = _core.Count + _optional.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             OptionalSection.Visibility = _optional.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-            SelfUpdateButton.Visibility = _selfUpdate != null ? Visibility.Visible : Visibility.Collapsed;
+            SelfUpdateBanner.Visibility = _selfUpdate != null ? Visibility.Visible : Visibility.Collapsed;
             if (_selfUpdate != null)
-                SelfUpdateButton.Content = $"Update installer to v{_selfUpdate.version}";
+                SelfUpdateTitle.Text = $"Installer update available, v{_selfUpdate.version}";
         }
 
         void RefreshLocalState()
@@ -125,7 +133,7 @@ namespace BigWalkVRInstaller
             var melonVersion = melon ? MelonLoaderInstaller.InstalledVersion(_settings.GamePath) : null;
             MelonText.Text = melon
                 ? $"Ready{(melonVersion != null ? $"  •  v{melonVersion}" : "")}"
-                : "The mod loader Big Walk VR runs on. One click, nothing else to do.";
+                : "The mod loader Big Walk VR depends on.";
             MelonButton.Content = melon ? "Reinstall" : "Install";
             MelonButton.IsEnabled = HasGame && !_melonBusy;
             SetStep(MelonBadge, MelonBadgeText, melon);
@@ -134,11 +142,10 @@ namespace BigWalkVRInstaller
             RestoreVanillaButton.IsEnabled = HasGame;
             SetStep(ModsBadge, ModsBadgeText, melon && AllMods.Any(m => m.IsCurrent));
 
-            // mods stay out of reach until the game folder and MelonLoader are sorted
+            // mods stay greyed out until the game folder and MelonLoader are sorted
             var ready = HasGame && melon;
-            ModsSection.Visibility = ready ? Visibility.Visible : Visibility.Collapsed;
-            ModsLocked.Visibility = ready ? Visibility.Collapsed : Visibility.Visible;
-            ModsLockedText.Text = !HasGame ? "Finish step 1 to continue." : "Finish step 2 to continue.";
+            ModsSection.IsEnabled = ready;
+            ModsSection.Opacity = ready ? 1 : 0.4;
         }
 
         void SetStep(Border badge, TextBlock label, bool done)
@@ -178,7 +185,7 @@ namespace BigWalkVRInstaller
                 mod.BusyText = "Installing...";
                 mod.Progress = 1;
                 await Task.Run(() => PackageInstaller.Install(_settings.GamePath, mod.Remote, bytes));
-                Status($"{mod.Name} v{mod.Remote.version} installed.");
+                Status($"{mod.Name} v{mod.Remote.version} installed");
             }
             catch (Exception ex)
             {
@@ -200,7 +207,7 @@ namespace BigWalkVRInstaller
             try
             {
                 PackageInstaller.Uninstall(_settings.GamePath, mod.Id);
-                Status($"{mod.Name} removed.");
+                Status($"{mod.Name} removed");
             }
             catch (Exception ex)
             {
@@ -214,12 +221,12 @@ namespace BigWalkVRInstaller
         {
             if (!HasGame)
             {
-                Status("Pick your Big Walk folder first.", true);
+                Status("Pick your Big Walk folder first", true);
                 return false;
             }
             if (GameLauncher.IsRunning())
             {
-                Status("Close Big Walk before changing mods.", true);
+                Status("Close Big Walk before changing mods", true);
                 return false;
             }
             return true;
@@ -237,7 +244,7 @@ namespace BigWalkVRInstaller
                 foreach (var mod in AllMods.Where(m => m.IsInstalled).ToList())
                     PackageInstaller.Uninstall(_settings.GamePath, mod.Id);
                 MelonLoaderInstaller.Remove(_settings.GamePath);
-                Status("Big Walk is back to vanilla.");
+                Status("Big Walk is back to vanilla");
             }
             catch (Exception ex)
             {
@@ -273,7 +280,7 @@ namespace BigWalkVRInstaller
                 MelonProgressText.Text = StatusText.Text = "Installing MelonLoader...";
                 MelonProgress.Value = 1;
                 await Task.Run(() => MelonLoaderInstaller.Extract(_settings.GamePath, bytes));
-                Status($"MelonLoader v{_melonSource.version} installed.");
+                Status($"MelonLoader v{_melonSource.version} installed");
             }
             catch (Exception ex)
             {
@@ -294,7 +301,7 @@ namespace BigWalkVRInstaller
             try
             {
                 GameLauncher.LaunchVr(_settings.GamePath);
-                Status("Launching Big Walk in VR. Make sure SteamVR is running.");
+                Status("Launching Big Walk in VR, make sure SteamVR is running");
             }
             catch (Exception ex)
             {
@@ -322,10 +329,10 @@ namespace BigWalkVRInstaller
                 if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
                 if (!GameLocator.IsValidGamePath(dialog.SelectedPath))
                 {
-                    Status($"That folder doesn't contain {GameLocator.ExeName}.", true);
+                    Status($"That folder doesn't contain {GameLocator.ExeName}", true);
                     return false;
                 }
-                _settings.GamePath = dialog.SelectedPath;
+                _settings.GamePath = GameLocator.Canonical(dialog.SelectedPath);
                 _settings.Save();
                 Status($"Game folder set to {_settings.GamePath}");
                 return true;
@@ -353,6 +360,7 @@ namespace BigWalkVRInstaller
         {
             if (_selfUpdate == null) return;
             SelfUpdateButton.IsEnabled = false;
+            SelfUpdateButton.Content = "Updating...";
             try
             {
                 Status("Downloading installer update...");
@@ -362,6 +370,7 @@ namespace BigWalkVRInstaller
             catch (Exception ex)
             {
                 SelfUpdateButton.IsEnabled = true;
+                SelfUpdateButton.Content = "Update now";
                 Status($"Installer update failed: {ex.Message}", true);
             }
         }

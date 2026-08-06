@@ -190,12 +190,12 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <Border x:Name="bd" Background="Transparent" CornerRadius="8" Padding="16,7">
+                    <Border x:Name="bd" Background="Transparent" CornerRadius="7" Padding="16,6">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="bd" Property="Background" Value="{StaticResource Panel}" />
+                            <Setter TargetName="bd" Property="Background" Value="{StaticResource Hover}" />
                             <Setter Property="Foreground" Value="{StaticResource Text}" />
                         </Trigger>
                         <MultiTrigger>

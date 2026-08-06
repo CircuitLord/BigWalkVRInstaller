@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
 
@@ -26,15 +27,17 @@ namespace BigWalkVRInstaller.Services
         }
 
         // registry steam path is lowercase with forward slashes, so rebuild it with the real on-disk casing
-        static string Canonical(string path)
+        public static string Canonical(string path)
         {
+            if (string.IsNullOrEmpty(path)) return path;
             try
             {
                 var dir = new DirectoryInfo(Path.GetFullPath(path));
                 var parts = new Stack<string>();
                 while (dir.Parent != null)
                 {
-                    parts.Push(dir.Parent.GetDirectories(dir.Name)[0].Name);
+                    // keep the typed segment if it isn't on disk, one missing folder shouldn't drop the whole fix
+                    parts.Push(dir.Parent.EnumerateDirectories(dir.Name).FirstOrDefault()?.Name ?? dir.Name);
                     dir = dir.Parent;
                 }
                 var result = dir.Name.ToUpperInvariant();
