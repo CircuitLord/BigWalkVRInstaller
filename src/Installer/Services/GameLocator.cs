@@ -20,9 +20,28 @@ namespace BigWalkVRInstaller.Services
             foreach (var library in SteamLibraries())
             {
                 var candidate = Path.Combine(library, "steamapps", "common", "Big Walk");
-                if (IsValidGamePath(candidate)) return candidate;
+                if (IsValidGamePath(candidate)) return Canonical(candidate);
             }
             return null;
+        }
+
+        // registry steam path is lowercase with forward slashes, so rebuild it with the real on-disk casing
+        static string Canonical(string path)
+        {
+            try
+            {
+                var dir = new DirectoryInfo(Path.GetFullPath(path));
+                var parts = new Stack<string>();
+                while (dir.Parent != null)
+                {
+                    parts.Push(dir.Parent.GetDirectories(dir.Name)[0].Name);
+                    dir = dir.Parent;
+                }
+                var result = dir.Name.ToUpperInvariant();
+                foreach (var part in parts) result = Path.Combine(result, part);
+                return result;
+            }
+            catch { return path; }
         }
 
         public static string SteamExePath()
