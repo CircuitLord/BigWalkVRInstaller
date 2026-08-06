@@ -9,19 +9,23 @@ namespace BigWalkVRInstaller.Services
     {
         public static bool IsRunning() => Process.GetProcessesByName("Big Walk").Any();
 
-        // steam has to own the launch so the game gets its app context, -force-d3d11 is required by the XR provider
-        public static void LaunchVr(string gamePath)
+        public static void LaunchNonVr(string gamePath) => Launch(gamePath, "-bigwalkvr-nonvr");
+
+        public static void LaunchVr(string gamePath) => Launch(gamePath, "-force-d3d11");
+
+        // steam has to own the launch so the game gets its app context
+        static void Launch(string gamePath, string arguments)
         {
             var steam = GameLocator.SteamExePath();
             if (steam != null)
             {
-                Process.Start(steam, $"-applaunch {GameLocator.AppId} -force-d3d11");
+                Process.Start(steam, $"-applaunch {GameLocator.AppId} {arguments}");
                 return;
             }
             Process.Start(new ProcessStartInfo
             {
                 FileName = Path.Combine(gamePath, GameLocator.ExeName),
-                Arguments = "-force-d3d11",
+                Arguments = arguments,
                 WorkingDirectory = gamePath,
             });
         }

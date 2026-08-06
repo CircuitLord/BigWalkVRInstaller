@@ -137,7 +137,16 @@ namespace BigWalkVRInstaller
             MelonButton.IsEnabled = HasGame && !_melonBusy;
             SetStep(MelonBadge, MelonBadgeText, melon);
 
-            LaunchButton.IsEnabled = HasGame && melon;
+            // no launching until step 3 is done, a modless launch just confuses people
+            var canLaunch = HasGame && melon && _core.Any(m => m.IsInstalled);
+            LaunchNonVrButton.IsEnabled = canLaunch;
+            LaunchButton.IsEnabled = canLaunch;
+            LaunchNonVrButton.ToolTip = canLaunch
+                ? "Launch Big Walk without VR"
+                : "Finish steps 1-3 first";
+            LaunchButton.ToolTip = canLaunch
+                ? "Launch Big Walk in VR, start SteamVR first"
+                : "Finish steps 1-3 first";
             RestoreVanillaButton.IsEnabled = HasGame;
             SetStep(ModsBadge, ModsBadgeText, melon && AllMods.Any(m => m.IsCurrent));
 
@@ -294,6 +303,19 @@ namespace BigWalkVRInstaller
         }
 
         // ---- shell actions ----
+
+        void LaunchNonVr_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                GameLauncher.LaunchNonVr(_settings.GamePath);
+                Status("Launching Big Walk in Non-VR mode");
+            }
+            catch (Exception ex)
+            {
+                Status($"Launch failed: {ex.Message}", true);
+            }
+        }
 
         void Launch_Click(object sender, RoutedEventArgs e)
         {

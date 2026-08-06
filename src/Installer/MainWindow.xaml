@@ -109,9 +109,14 @@
             </Border>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Style="{StaticResource Ghost}" Content="Refresh" Click="Refresh_Click" />
+                <Button x:Name="LaunchNonVrButton" Style="{StaticResource NonVr}" Content="Launch in Non-VR"
+                        Padding="18,7" Margin="8,0,0,0" Click="LaunchNonVr_Click"
+                        ToolTipService.ShowOnDisabled="True"
+                        ToolTip="Launch Big Walk without VR" />
                 <Button x:Name="LaunchButton" Style="{StaticResource Primary}" Content="Launch in VR"
                         Padding="18,7" Margin="8,0,0,0" Click="Launch_Click"
-                        ToolTip="Start SteamVR first, then launch" />
+                        ToolTipService.ShowOnDisabled="True"
+                        ToolTip="Launch Big Walk in VR, start SteamVR first" />
             </StackPanel>
         </Grid>
 
@@ -211,7 +216,7 @@
                                            Foreground="{StaticResource TextDim}"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
-                            <TextBlock Text="Install the mod" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Text="Install mods" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
                         </StackPanel>
                     </Grid>
 

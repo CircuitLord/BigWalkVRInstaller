@@ -101,7 +101,7 @@ namespace BigWalkVRInstaller
             get
             {
                 var author = string.IsNullOrEmpty(Remote.author) ? "unknown" : Remote.author;
-                var version = IsInstalled && !CanUpdate ? $"v{InstalledVersion}" : $"v{Remote.version}";
+                var version = CanUpdate ? $"v{InstalledVersion} → v{Remote.version}" : $"v{InstalledVersion ?? Remote.version}";
                 var size = Remote.size > 0 ? $"  •  {FormatSize(Remote.size)}" : "";
                 return $"{author}  •  {version}{size}";
             }

@@ -13,7 +13,8 @@
     <Color x:Key="AccentColor">#4FA3E3</Color>
     <Color x:Key="AccentHoverColor">#66B4EE</Color>
     <Color x:Key="GreenColor">#5FC98B</Color>
-    <Color x:Key="AmberColor">#E8B45C</Color>
+    <Color x:Key="AmberColor">#9A5B12</Color>
+    <Color x:Key="AmberHoverColor">#A46516</Color>
     <Color x:Key="RedColor">#E06C75</Color>
     <Color x:Key="RedHoverColor">#E9838B</Color>
 
@@ -27,6 +28,7 @@
     <SolidColorBrush x:Key="AccentHover" Color="{StaticResource AccentHoverColor}" />
     <SolidColorBrush x:Key="Green" Color="{StaticResource GreenColor}" />
     <SolidColorBrush x:Key="Amber" Color="{StaticResource AmberColor}" />
+    <SolidColorBrush x:Key="AmberHover" Color="{StaticResource AmberHoverColor}" />
     <SolidColorBrush x:Key="Red" Color="{StaticResource RedColor}" />
     <SolidColorBrush x:Key="RedHover" Color="{StaticResource RedHoverColor}" />
 
@@ -53,6 +55,28 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="bd" Property="Background" Value="{StaticResource AccentHover}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="bd" Property="Opacity" Value="0.4" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="NonVr" TargetType="Button" BasedOn="{StaticResource Primary}">
+        <Setter Property="Background" Value="{StaticResource Amber}" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{StaticResource AmberHover}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="bd" Property="Opacity" Value="0.4" />
