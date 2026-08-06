@@ -2,8 +2,6 @@
 
 ### NOTE: The mod is not done yet, join the [Discord](https://discord.gg/MTKwud2cCP) to get updates when it releases!
 
-...
-
 Big Walk VR adds full multiplayer-compatible SteamVR support to the game Big Walk by House House. It includes stereo rendering support, full 6dof motion controls with support for grabbing and throwing objects, and more!
 
 This is a utility to automatically install the VR mod and associated files, and keep them up-to-date.
