@@ -37,9 +37,9 @@ Output is a single self-contained `src/Installer/bin/Release/net48/BigWalkVRInst
 
 A mod package is a zip that mirrors the Big Walk folder, so installing is extract-in-place. Each entry can declare:
 
-- `core` — the headline mod. Everything else lists under Optional add-ons.
-- `preserve` — files left alone if they already exist, so your calibration and configs survive updates.
-- `tokenize` — files where `{{GAMEDIR}}` and `{{GAMEDIR_JSON}}` are replaced with your game folder on install, used for the SteamVR app manifest.
+- `core`: the headline mod. Everything else lists under Optional add-ons.
+- `preserve`: files left alone if they already exist, so your calibration and configs survive updates.
+- `tokenize`: files where `{{GAMEDIR}}` and `{{GAMEDIR_JSON}}` are replaced with your game folder on install, used for the SteamVR app manifest.
 
 Every install records the exact list of files it wrote to `<game>\UserData\BigWalkVRInstaller\<id>.json`. Updates delete files the previous version shipped that the new one no longer does, and uninstall removes exactly what was recorded, nothing else.
 
