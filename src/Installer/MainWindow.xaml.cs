@@ -124,7 +124,7 @@ namespace BigWalkVRInstaller
 
             var melonVersion = melon ? MelonLoaderInstaller.InstalledVersion(_settings.GamePath) : null;
             MelonText.Text = melon
-                ? $"Ready{(melonVersion != null ? $"  •  v{melonVersion}" : "")}. This is what loads the mod into the game."
+                ? $"Ready{(melonVersion != null ? $"  •  v{melonVersion}" : "")}"
                 : "The mod loader Big Walk VR runs on. One click, nothing else to do.";
             MelonButton.Content = melon ? "Reinstall" : "Install";
             MelonButton.IsEnabled = HasGame && !_melonBusy;
