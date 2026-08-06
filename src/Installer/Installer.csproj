@@ -8,7 +8,7 @@
     <LangVersion>latest</LangVersion>
     <AssemblyName>BigWalkVRInstaller</AssemblyName>
     <RootNamespace>BigWalkVRInstaller</RootNamespace>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
   </PropertyGroup>

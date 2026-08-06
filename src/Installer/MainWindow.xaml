@@ -31,23 +31,27 @@
                                        TextWrapping="Wrap" Margin="0,7,0,0"
                                        Visibility="{Binding HasDescription, Converter={StaticResource BoolToVis}}" />
                         </StackPanel>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right">
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
+                                    HorizontalAlignment="Right">
+                            <Button Style="{StaticResource Quiet}" Content="Uninstall" FontSize="11.5" Padding="6,3"
+                                    Margin="0,0,8,0" VerticalAlignment="Center" Click="Uninstall_Click"
+                                    Visibility="{Binding ShowUninstall, Converter={StaticResource BoolToVis}}" />
                             <Button Style="{StaticResource Primary}" Content="Install" Padding="18,7"
                                     Click="Install_Click"
                                     Visibility="{Binding ShowInstall, Converter={StaticResource BoolToVis}}" />
                             <Button Style="{StaticResource Primary}" Content="{Binding UpdateLabel}" Padding="18,7"
                                     Click="Install_Click"
                                     Visibility="{Binding ShowUpdate, Converter={StaticResource BoolToVis}}" />
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
-                                        Visibility="{Binding ShowCurrent, Converter={StaticResource BoolToVis}}">
-                                <Ellipse Width="7" Height="7" Fill="{StaticResource Green}"
-                                         VerticalAlignment="Center" Margin="0,1,7,0" />
-                                <TextBlock Text="Installed" Foreground="{StaticResource Green}" FontSize="12.5"
-                                           FontWeight="SemiBold" VerticalAlignment="Center" />
-                            </StackPanel>
-                            <Button Style="{StaticResource Quiet}" Content="Uninstall" FontSize="11" Padding="6,3"
-                                    Margin="0,6,0,0" HorizontalAlignment="Right" Click="Uninstall_Click"
-                                    Visibility="{Binding ShowUninstall, Converter={StaticResource BoolToVis}}" />
+                            <Border Style="{StaticResource StatusChip}"
+                                    Visibility="{Binding ShowCurrent, Converter={StaticResource BoolToVis}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" FontSize="10"
+                                               Foreground="{StaticResource Green}" VerticalAlignment="Center"
+                                               Margin="0,1,7,0" />
+                                    <TextBlock Text="Installed" Foreground="{StaticResource Green}" FontSize="12"
+                                               FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
                     </Grid>
                     <StackPanel Margin="0,12,0,2"

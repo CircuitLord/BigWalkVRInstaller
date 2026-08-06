@@ -71,7 +71,6 @@ namespace BigWalkVRInstaller
             if (vr == null) return;
             if (vr.CanUpdate) Status($"An update to v{vr.Remote.version} is available");
             else if (vr.IsInstalled) Status("Everything is up to date");
-            else Status("Follow the steps to install");
         }
 
         bool HasGame => GameLocator.IsValidGamePath(_settings?.GamePath);

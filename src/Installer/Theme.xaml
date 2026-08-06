@@ -256,6 +256,13 @@
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
+    <!-- green state chip, sized to match the Primary button box -->
+    <Style x:Key="StatusChip" TargetType="Border" BasedOn="{StaticResource Tag}">
+        <Setter Property="Background" Value="#1F5FC98B" />
+        <Setter Property="BorderBrush" Value="#4D5FC98B" />
+        <Setter Property="Padding" Value="13,6" />
+    </Style>
+
     <!-- thin download progress bar -->
     <Style x:Key="Progress" TargetType="ProgressBar">
         <Setter Property="Height" Value="4" />
