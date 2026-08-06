@@ -54,7 +54,7 @@ namespace BigWalkVRInstaller.Services
                 foreach (var entry in zip.Entries)
                 {
                     if (entry.Name.Length == 0) continue;
-                    var dest = Path.Combine(gamePath, entry.FullName.Replace('/', '\\'));
+                    var dest = PackageInstaller.ResolveInside(gamePath, entry.FullName);
                     Directory.CreateDirectory(Path.GetDirectoryName(dest));
                     entry.ExtractToFile(dest, true);
                 }

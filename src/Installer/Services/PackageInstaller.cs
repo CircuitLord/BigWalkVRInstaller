@@ -11,7 +11,21 @@ namespace BigWalkVRInstaller.Services
     public static class PackageInstaller
     {
         static string RecordDir(string gamePath) => Path.Combine(gamePath, "UserData", "BigWalkVRInstaller");
-        static string RecordPath(string gamePath, string id) => Path.Combine(RecordDir(gamePath), id + ".json");
+
+        static string RecordPath(string gamePath, string id)
+        {
+            ValidateId(id);
+            return ResolveInside(RecordDir(gamePath), id + ".json");
+        }
+
+        static void ValidateId(string id)
+        {
+            if (string.IsNullOrEmpty(id) || id.Any(c => !IsIdCharacter(c)))
+                throw new Exception($"invalid mod id: {id}");
+        }
+
+        static bool IsIdCharacter(char c) =>
+            c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '-' || c == '_';
 
         public static InstallRecord ReadRecord(string gamePath, string id)
         {
@@ -26,6 +40,7 @@ namespace BigWalkVRInstaller.Services
 
         public static void Install(string gamePath, ManifestMod mod, byte[] zipBytes)
         {
+            ValidateId(mod.id);
             var previous = ReadRecord(gamePath, mod.id);
             var preserve = PathSet(mod.preserve);
             var tokenize = PathSet(mod.tokenize);
@@ -64,6 +79,7 @@ namespace BigWalkVRInstaller.Services
 
         public static void Uninstall(string gamePath, string id)
         {
+            ValidateId(id);
             var record = ReadRecord(gamePath, id);
             if (record?.files != null)
                 foreach (var relative in record.files)
@@ -116,7 +132,7 @@ namespace BigWalkVRInstaller.Services
             new HashSet<string>((paths ?? new List<string>()).Select(Normalize), StringComparer.OrdinalIgnoreCase);
 
         // keeps a malicious or malformed package from writing outside the game folder
-        static string ResolveInside(string gamePath, string relative)
+        internal static string ResolveInside(string gamePath, string relative)
         {
             var root = Path.GetFullPath(gamePath).TrimEnd('\\') + "\\";
             var full = Path.GetFullPath(Path.Combine(root, relative));

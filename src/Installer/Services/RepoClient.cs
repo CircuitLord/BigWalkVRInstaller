@@ -21,6 +21,7 @@ namespace BigWalkVRInstaller.Services
 
         public static async Task<Manifest> FetchManifest(string url)
         {
+            RequireHttps(url);
             // cache buster, raw.githubusercontent holds manifests for a few minutes
             var bust = url + (url.Contains("?") ? "&" : "?") + "t=" + DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             var json = await Http.GetStringAsync(bust);
@@ -31,6 +32,9 @@ namespace BigWalkVRInstaller.Services
 
         public static async Task<byte[]> Download(string url, string expectedSha256, IProgress<double> progress = null)
         {
+            RequireHttps(url);
+            ValidateSha256(expectedSha256);
+
             byte[] bytes;
             using (var response = await Http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
             {
@@ -50,13 +54,23 @@ namespace BigWalkVRInstaller.Services
                 }
             }
 
-            if (!string.IsNullOrEmpty(expectedSha256))
-            {
-                var actual = Sha256(bytes);
-                if (!string.Equals(actual, expectedSha256, StringComparison.OrdinalIgnoreCase))
-                    throw new Exception($"sha256 mismatch for {url}");
-            }
+            var actual = Sha256(bytes);
+            if (!string.Equals(actual, expectedSha256, StringComparison.OrdinalIgnoreCase))
+                throw new Exception($"sha256 mismatch for {url}");
             return bytes;
+        }
+
+        static void RequireHttps(string url)
+        {
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+                throw new Exception($"URL must use HTTPS: {url}");
+        }
+
+        static void ValidateSha256(string value)
+        {
+            if (value == null || value.Length != 64) throw new Exception("download requires a SHA-256 hash");
+            foreach (var c in value)
+                if (!Uri.IsHexDigit(c)) throw new Exception("download requires a valid SHA-256 hash");
         }
 
         public static string Sha256(byte[] bytes)
