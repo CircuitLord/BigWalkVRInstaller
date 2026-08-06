@@ -41,6 +41,10 @@ A mod package is a zip that mirrors the Big Walk folder, so installing is extrac
 
 Every install records the exact list of files it wrote to `<game>\UserData\BigWalkVRInstaller\<id>.json`. Updates delete files the previous version shipped that the new one no longer does, and uninstall removes exactly what was recorded, nothing else.
 
+## License
+
+MIT, see [LICENSE](LICENSE). Bundled dependencies are listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
 ## Reporting a problem
 
 Open an issue with what you did and what happened. The Logs tab in the app has the installer's own history, and the Mod logs button opens `MelonLoader\Latest.log` in your game folder, which is where the mod itself reports errors.
