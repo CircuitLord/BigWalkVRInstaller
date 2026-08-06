@@ -142,7 +142,7 @@ namespace BigWalkVRInstaller
             LaunchNonVrButton.IsEnabled = canLaunch;
             LaunchButton.IsEnabled = canLaunch;
             LaunchNonVrButton.ToolTip = canLaunch
-                ? "Launch Big Walk without VR"
+                ? "Play normally while seeing VR players' tracked movement"
                 : "Finish steps 1-3 first";
             LaunchButton.ToolTip = canLaunch
                 ? "Launch Big Walk in VR, start SteamVR first"

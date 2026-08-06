@@ -112,7 +112,7 @@
                 <Button x:Name="LaunchNonVrButton" Style="{StaticResource NonVr}" Content="Launch in Non-VR"
                         Padding="18,7" Margin="8,0,0,0" Click="LaunchNonVr_Click"
                         ToolTipService.ShowOnDisabled="True"
-                        ToolTip="Launch Big Walk without VR" />
+                        ToolTip="Play normally while seeing VR players' tracked movement" />
                 <Button x:Name="LaunchButton" Style="{StaticResource Primary}" Content="Launch in VR"
                         Padding="18,7" Margin="8,0,0,0" Click="Launch_Click"
                         ToolTipService.ShowOnDisabled="True"
