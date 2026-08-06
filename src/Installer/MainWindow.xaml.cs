@@ -111,7 +111,7 @@ namespace BigWalkVRInstaller
             OptionalSection.Visibility = _optional.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             SelfUpdateBanner.Visibility = _selfUpdate != null ? Visibility.Visible : Visibility.Collapsed;
             if (_selfUpdate != null)
-                SelfUpdateTitle.Text = $"Installer update available, v{_selfUpdate.version}";
+                SelfUpdateTitle.Text = $"Installer update available: v{_selfUpdate.version}";
         }
 
         void RefreshLocalState()
@@ -201,7 +201,7 @@ namespace BigWalkVRInstaller
         {
             var mod = (ModEntry)((FrameworkElement)sender).DataContext;
             if (!Ready()) return;
-            if (!await Confirm("Uninstall " + mod.Name, "Its files are removed from the game folder, including any calibration it saved.", "Uninstall")) return;
+            if (!await Confirm("Uninstall " + mod.Name, "All mod files and configuration will be removed.", "Uninstall")) return;
 
             try
             {

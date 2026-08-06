@@ -127,11 +127,8 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="15"
                            Foreground="{StaticResource Accent}" VerticalAlignment="Center" Margin="0,0,12,0" />
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,14,0">
-                    <TextBlock x:Name="SelfUpdateTitle" FontSize="13" FontWeight="SemiBold" />
-                    <TextBlock Text="Grab it now so mod downloads stay in sync." FontSize="11.5"
-                               Foreground="{StaticResource TextDim}" Margin="0,2,0,0" />
-                </StackPanel>
+                <TextBlock x:Name="SelfUpdateTitle" Grid.Column="1" FontSize="13" FontWeight="SemiBold"
+                           VerticalAlignment="Center" Margin="0,0,14,0" />
                 <Button x:Name="SelfUpdateButton" Grid.Column="2" Style="{StaticResource Primary}"
                         Content="Update now" Padding="18,7" VerticalAlignment="Center" Click="SelfUpdate_Click" />
             </Grid>
