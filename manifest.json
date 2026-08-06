@@ -1,0 +1,10 @@
+{
+  "name": "Big Walk Mods",
+  "installer": null,
+  "melonLoader": {
+    "version": "0.7.3",
+    "url": "https://github.com/LavaGang/MelonLoader/releases/download/v0.7.3/MelonLoader.x64.zip",
+    "sha256": "5b2b2f3d1cd42b59ec886c5bdc2663edae87a0097a4f4a8f58c0965a99dda416"
+  },
+  "mods": []
+}
