@@ -17,7 +17,7 @@
                      "name":  "Big Walk VR",
                      "author":  "CircuitLord",
                      "version":  "0.1.0",
-                     "description":  "Full VR support for Big Walk: stereo HMD rendering, tracked hands and held props, room-scale movement, motion-controller menu pointers, spatial audio and handheld binoculars. Needs SteamVR.",
+                     "description":  "Full multiplayer-compatible SteamVR support for Big Walk.",
                      "url":  "https://raw.githubusercontent.com/CircuitLord/BigWalkVRInstaller/main/packages/BigWalkVR/BigWalkVR-0.1.0.zip",
                      "sha256":  "d6784fc35a44aa58659e61099b3befb9149586d1e8c315ff7f831640e1dc4b03",
                      "size":  20072340,
