@@ -1,6 +1,10 @@
 {
   "name": "Big Walk Mods",
-  "installer": null,
+  "installer": {
+    "version": "1.0.1",
+    "url": "https://github.com/CircuitLord/BigWalkVRInstaller/releases/download/v1.0.1/BigWalkVRInstaller.exe",
+    "sha256": "23e55720b0e8d177c8c07c5d90f1aac2b990a98a84387f7445e201a842b6f1ff"
+  },
   "melonLoader": {
     "version": "0.7.3",
     "url": "https://github.com/LavaGang/MelonLoader/releases/download/v0.7.3/MelonLoader.x64.zip",
