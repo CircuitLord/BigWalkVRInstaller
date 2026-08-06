@@ -8,6 +8,8 @@ Big Walk VR adds full multiplayer-compatible SteamVR support to the game Big Wal
 
 This is a utility to automatically install the VR mod and associated files, and keep them up-to-date.
 
+Big Walk VR and this installer are community projects, not affiliated with or endorsed by House House. Use at your own risk.
+
 
 **[Download BigWalkVRInstaller](https://github.com/CircuitLord/BigWalkVRInstaller/releases/download/dist/BigWalkVRInstaller.exe)**
 
