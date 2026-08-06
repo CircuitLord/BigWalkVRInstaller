@@ -1,25 +1,18 @@
 # Big Walk VR Installer
 
-Installs the Big Walk VR mod in a couple of clicks. No unzipping, no dragging files into game folders.
+Big Walk VR adds full multiplayer-compatible SteamVR support to the game Big Walk by House House. It includes stereo rendering support, full 6dof motion controls with support for grabbing and throwing objects, and more!
 
-**[Download BigWalkVRInstaller.exe](https://github.com/CircuitLord/BigWalkVRInstaller/releases/download/dist/BigWalkVRInstaller.exe)**
+This is a utility to automatically install the VR mod and associated files, and keep them up-to-date.
 
-Run it and follow the three steps. It keeps itself and the mod up to date, and can put your game back to vanilla whenever you want.
+**[Download BigWalkVRInstaller](https://github.com/CircuitLord/BigWalkVRInstaller/releases/download/dist/BigWalkVRInstaller.exe)**
 
 ## What it does
 
-1. **Finds Big Walk** through your Steam install. If it guesses wrong, point it at the folder yourself.
-2. **Sets up MelonLoader**, the mod loader Big Walk VR runs on. One click.
+1. **Finds Big Walk** through your Steam install.
+2. **Sets up MelonLoader**, the mod loader Big Walk VR depends on.
 3. **Installs the mod**, plus any optional add-ons.
 
 Then start SteamVR and press Launch in VR.
-
-## About the mod
-
-Big Walk VR adds full VR support to the game Big Walk by House House. It includes stereo rendering support, full 6dof motion controls with support for grabbing and throwing objects, and more!
-
-It needs a SteamVR-compatible headset. Multiplayer works with anyone, although tracked hands and props only show up for other players who also have the mod.
-
 
 ## Building from source
 
