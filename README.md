@@ -17,7 +17,7 @@ Big Walk VR and this installer are community projects, not affiliated with or en
 2. **Sets up MelonLoader**, the mod loader Big Walk VR depends on.
 3. **Installs the mod**, plus any optional add-ons.
 
-Then start SteamVR and press Launch in VR. To play normally while keeping the mod installed and seeing VR players' tracked movement, press Launch in Non-VR instead.
+Then start SteamVR and press Launch in VR. Launching Big Walk normally through Steam or pressing Launch in Non-VR starts the game without local VR while keeping the mod installed and showing VR players' tracked movement.
 
 ## Building from source
 

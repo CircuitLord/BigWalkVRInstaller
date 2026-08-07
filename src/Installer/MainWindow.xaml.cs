@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Threading;
 using BigWalkVRInstaller.Services;
 
 namespace BigWalkVRInstaller
@@ -29,6 +30,7 @@ namespace BigWalkVRInstaller
         ReleaseInfo _selfUpdate;
         ReleaseInfo _melonSource = MelonLoaderInstaller.Fallback;
         bool _melonBusy;
+        GameStartupWatcher _watcher;
 
         public MainWindow()
         {
@@ -304,12 +306,19 @@ namespace BigWalkVRInstaller
 
         // ---- shell actions ----
 
-        void LaunchNonVr_Click(object sender, RoutedEventArgs e)
+        void LaunchNonVr_Click(object sender, RoutedEventArgs e) => Launch(
+            () => GameLauncher.LaunchNonVr(_settings.GamePath), "Launching Big Walk in Non-VR mode");
+
+        void Launch_Click(object sender, RoutedEventArgs e) => Launch(
+            () => GameLauncher.LaunchVr(_settings.GamePath), "Launching Big Walk in VR");
+
+        void Launch(Action launch, string title)
         {
             try
             {
-                GameLauncher.LaunchNonVr(_settings.GamePath);
-                Status("Launching Big Walk in Non-VR mode");
+                launch();
+                Status(title);
+                ShowLaunchModal(title + "...");
             }
             catch (Exception ex)
             {
@@ -317,17 +326,69 @@ namespace BigWalkVRInstaller
             }
         }
 
-        void Launch_Click(object sender, RoutedEventArgs e)
+        // ---- launch modal ----
+
+        void ShowLaunchModal(string title)
         {
-            try
+            StopWatcher();
+            LaunchTitle.Text = title;
+            GenPanel.Visibility = Visibility.Collapsed;
+            LaunchOverlay.Visibility = Visibility.Visible;
+
+            _watcher = new GameStartupWatcher(_settings.GamePath, new Progress<LaunchPhase>(OnLaunchPhase));
+            _watcher.Start();
+        }
+
+        void OnLaunchPhase(LaunchPhase phase)
+        {
+            switch (phase)
             {
-                GameLauncher.LaunchVr(_settings.GamePath);
-                Status("Launching Big Walk in VR, make sure SteamVR is running");
+                case LaunchPhase.Generating:
+                    GenPanel.Visibility = Visibility.Visible;
+                    GenCheck.Visibility = Visibility.Collapsed;
+                    GenTitle.Text = "Doing one-time setup for this game version";
+                    GenText.Text = "This can take a minute, please wait.";
+                    GenText.Visibility = Visibility.Visible;
+                    Status("MelonLoader is doing one-time setup for this game version");
+                    break;
+
+                case LaunchPhase.GenerationDone:
+                    GenCheck.Visibility = Visibility.Visible;
+                    GenTitle.Text = "Setup complete";
+                    GenText.Visibility = Visibility.Collapsed;
+                    Status("One-time setup finished");
+                    break;
+
+                // the modal stays up for the whole session, it is the only way to stop the game again
+                case LaunchPhase.Ready:
+                    LaunchTitle.Text = "Big Walk is running";
+                    Status("Big Walk is running");
+                    break;
+
+                case LaunchPhase.Exited:
+                    CloseLaunchModal();
+                    Status("Big Walk closed");
+                    break;
             }
-            catch (Exception ex)
-            {
-                Status($"Launch failed: {ex.Message}", true);
-            }
+        }
+
+        void CloseLaunchModal()
+        {
+            StopWatcher();
+            LaunchOverlay.Visibility = Visibility.Collapsed;
+        }
+
+        void StopWatcher()
+        {
+            _watcher?.Stop();
+            _watcher = null;
+        }
+
+        void LaunchStop_Click(object sender, RoutedEventArgs e)
+        {
+            _watcher?.StopGame(); // stop before the watcher is dropped, it owns the process handle
+            CloseLaunchModal();
+            Status("Stopping Big Walk");
         }
 
         async void Refresh_Click(object sender, RoutedEventArgs e)
@@ -430,6 +491,7 @@ namespace BigWalkVRInstaller
 
         void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
+            // escape does not dismiss the launch modal, Stop is the only way out so the game can't be orphaned
             if (_confirm == null || e.Key != System.Windows.Input.Key.Escape) return;
             CloseConfirm(false);
             e.Handled = true;

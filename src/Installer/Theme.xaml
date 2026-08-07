@@ -304,6 +304,43 @@
         </Setter>
     </Style>
 
+    <!-- indeterminate ring, only spins while it is on screen -->
+    <Style x:Key="Spinner" TargetType="Control">
+        <Setter Property="Width" Value="28" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Foreground" Value="{StaticResource Accent}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Control">
+                    <Grid>
+                        <Ellipse Stroke="{StaticResource Stroke}" StrokeThickness="3" Margin="2" />
+                        <Ellipse x:Name="arc" Stroke="{TemplateBinding Foreground}" StrokeThickness="3" Margin="2"
+                                 StrokeDashArray="6 20" StrokeDashCap="Round" RenderTransformOrigin="0.5,0.5">
+                            <Ellipse.RenderTransform>
+                                <RotateTransform x:Name="rot" />
+                            </Ellipse.RenderTransform>
+                        </Ellipse>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsVisible" Value="True">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard x:Name="spin">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="rot" Storyboard.TargetProperty="Angle"
+                                                         From="0" To="360" Duration="0:0:1.1" RepeatBehavior="Forever" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <StopStoryboard BeginStoryboardName="spin" />
+                            </Trigger.ExitActions>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style TargetType="ScrollBar">
         <Setter Property="Width" Value="8" />
         <Setter Property="Background" Value="Transparent" />

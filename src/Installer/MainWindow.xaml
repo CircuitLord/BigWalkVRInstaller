@@ -280,6 +280,48 @@
                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="2,0,10,0" />
         </Grid>
 
+        <!-- launch progress, explains the one-time il2cpp regen when it happens -->
+        <Border x:Name="LaunchOverlay" Grid.Row="0" Grid.RowSpan="5" Background="#D914171C" Visibility="Collapsed">
+            <Border Background="{StaticResource Panel}" BorderBrush="{StaticResource Stroke}" BorderThickness="1"
+                    CornerRadius="10" Padding="22,18" Width="420"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Control Grid.Column="0" Style="{StaticResource Spinner}" VerticalAlignment="Center"
+                                 Margin="0,0,15,0" />
+                        <TextBlock x:Name="LaunchTitle" Grid.Column="1" FontSize="14.5" FontWeight="SemiBold"
+                                   VerticalAlignment="Center" TextWrapping="Wrap" />
+                    </Grid>
+
+                    <Border x:Name="GenPanel" Margin="0,16,0,0" Padding="14,12" CornerRadius="8"
+                            Background="#1F4FA3E3" BorderBrush="{StaticResource Accent}" BorderThickness="1"
+                            Visibility="Collapsed">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="GenCheck" Grid.Column="0" Text="&#xE73E;" FontFamily="Segoe MDL2 Assets"
+                                       FontSize="14" Foreground="{StaticResource Green}" VerticalAlignment="Center"
+                                       Margin="0,0,11,0" Visibility="Collapsed" />
+                            <StackPanel Grid.Column="1">
+                                <TextBlock x:Name="GenTitle" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                <TextBlock x:Name="GenText" FontSize="12" Foreground="{StaticResource TextDim}"
+                                           TextWrapping="Wrap" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Button Style="{StaticResource Ghost}" Content="Stop" Padding="16,7" Margin="0,18,0,0"
+                            HorizontalAlignment="Right" Click="LaunchStop_Click" />
+                </StackPanel>
+            </Border>
+        </Border>
+
         <!-- themed confirm, replaces the system message box -->
         <Border x:Name="ConfirmOverlay" Grid.Row="0" Grid.RowSpan="5" Background="#D914171C" Visibility="Collapsed">
             <Border Background="{StaticResource Panel}" BorderBrush="{StaticResource Stroke}" BorderThickness="1"
