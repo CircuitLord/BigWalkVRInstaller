@@ -1,10 +1,10 @@
 {
     "name":  "Big Walk Mods",
     "installer":  {
-                      "version":  "1.0.6",
-                      "url":  "https://github.com/CircuitLord/BigWalkVRInstaller/releases/download/v1.0.6/BigWalkVRInstaller.exe",
-                      "sha256":  "cae8e0feaffbdac1007e8c2f10704081aa39e1f763cceef4f45b10975916c90a",
-                      "commit":  "03607bd26be68d66be42da3747d6657486601937"
+                      "version":  "1.0.7",
+                      "url":  "https://github.com/CircuitLord/BigWalkVRInstaller/releases/download/v1.0.7/BigWalkVRInstaller.exe",
+                      "sha256":  "b00380ef1a91fb353555697b49627099ba982b15d0698a7fc2eb159de9693630",
+                      "commit":  "22cf88583c8e09781687a8e7d846254bb315f37a"
                   },
     "melonLoader":  {
                         "version":  "0.7.3",
