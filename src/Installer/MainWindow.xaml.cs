@@ -160,10 +160,10 @@ namespace BigWalkVRInstaller
 
         void SetStep(Border badge, TextBlock label, bool done)
         {
-            badge.Background = Brush(done ? "Green" : "Hover");
-            badge.BorderBrush = Brush(done ? "Green" : "Stroke");
+            badge.Background = Brush(done ? "GreenFill" : "Hover");
+            badge.BorderBrush = Brush(done ? "GreenFillBorder" : "Stroke");
             label.Text = done ? "✓" : (string)label.Tag;
-            label.Foreground = Brush(done ? "Bg" : "TextDim");
+            label.Foreground = Brush(done ? "Green" : "TextDim");
         }
 
         Brush Brush(string key) => (Brush)FindResource(key);

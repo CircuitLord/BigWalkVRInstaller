@@ -10,11 +10,14 @@
     <Color x:Key="BorderColor">#2C323C</Color>
     <Color x:Key="TextColor">#E9ECF2</Color>
     <Color x:Key="TextDimColor">#939CAB</Color>
+    <!-- text and glyphs sitting on a light semantic fill -->
+    <Color x:Key="TextOnFillColor">#0E1216</Color>
     <Color x:Key="AccentColor">#4FA3E3</Color>
     <Color x:Key="AccentHoverColor">#66B4EE</Color>
     <Color x:Key="GreenColor">#5FC98B</Color>
-    <Color x:Key="AmberColor">#9A5B12</Color>
-    <Color x:Key="AmberHoverColor">#A46516</Color>
+    <!-- amber only ever means a pending update -->
+    <Color x:Key="AmberColor">#E9A94A</Color>
+    <Color x:Key="AmberHoverColor">#F4BA63</Color>
     <Color x:Key="RedColor">#E06C75</Color>
     <Color x:Key="RedHoverColor">#E9838B</Color>
 
@@ -24,23 +27,35 @@
     <SolidColorBrush x:Key="Stroke" Color="{StaticResource BorderColor}" />
     <SolidColorBrush x:Key="Text" Color="{StaticResource TextColor}" />
     <SolidColorBrush x:Key="TextDim" Color="{StaticResource TextDimColor}" />
+    <SolidColorBrush x:Key="TextOnFill" Color="{StaticResource TextOnFillColor}" />
+    <SolidColorBrush x:Key="Scrim" Color="{StaticResource BgColor}" Opacity="0.85" />
+
+    <!-- every semantic color comes as solid, hover, 12% fill, 30% fill border -->
     <SolidColorBrush x:Key="Accent" Color="{StaticResource AccentColor}" />
     <SolidColorBrush x:Key="AccentHover" Color="{StaticResource AccentHoverColor}" />
+    <SolidColorBrush x:Key="AccentFill" Color="{StaticResource AccentColor}" Opacity="0.12" />
+    <SolidColorBrush x:Key="AccentFillBorder" Color="{StaticResource AccentColor}" Opacity="0.3" />
     <SolidColorBrush x:Key="Green" Color="{StaticResource GreenColor}" />
+    <SolidColorBrush x:Key="GreenFill" Color="{StaticResource GreenColor}" Opacity="0.12" />
+    <SolidColorBrush x:Key="GreenFillBorder" Color="{StaticResource GreenColor}" Opacity="0.3" />
     <SolidColorBrush x:Key="Amber" Color="{StaticResource AmberColor}" />
     <SolidColorBrush x:Key="AmberHover" Color="{StaticResource AmberHoverColor}" />
+    <SolidColorBrush x:Key="AmberFill" Color="{StaticResource AmberColor}" Opacity="0.12" />
+    <SolidColorBrush x:Key="AmberFillBorder" Color="{StaticResource AmberColor}" Opacity="0.3" />
     <SolidColorBrush x:Key="Red" Color="{StaticResource RedColor}" />
     <SolidColorBrush x:Key="RedHover" Color="{StaticResource RedHoverColor}" />
+    <!-- windows close button red, deliberately not our palette red -->
+    <SolidColorBrush x:Key="CloseRed" Color="#C42B1C" />
 
+    <!-- no Foreground here, it would beat the button Foreground a string content TextBlock inherits -->
     <Style TargetType="TextBlock">
-        <Setter Property="Foreground" Value="{StaticResource Text}" />
         <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
     </Style>
 
     <!-- solid accent button -->
     <Style x:Key="Primary" TargetType="Button">
         <Setter Property="Background" Value="{StaticResource Accent}" />
-        <Setter Property="Foreground" Value="#0E1216" />
+        <Setter Property="Foreground" Value="{StaticResource TextOnFill}" />
         <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="FontWeight" Value="SemiBold" />
@@ -65,9 +80,33 @@
         </Setter>
     </Style>
 
-    <Style x:Key="NonVr" TargetType="Button" BasedOn="{StaticResource Primary}">
+    <!-- neutral solid, an action of the same weight as Primary but not the one we push -->
+    <Style x:Key="Secondary" TargetType="Button" BasedOn="{StaticResource Primary}">
+        <Setter Property="Background" Value="{StaticResource Hover}" />
+        <Setter Property="Foreground" Value="{StaticResource Text}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}" BorderBrush="{StaticResource Stroke}"
+                            BorderThickness="1" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{StaticResource Stroke}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="bd" Property="Opacity" Value="0.4" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- solid amber button, the pending update action -->
+    <Style x:Key="Update" TargetType="Button" BasedOn="{StaticResource Primary}">
         <Setter Property="Background" Value="{StaticResource Amber}" />
-        <Setter Property="Foreground" Value="#FFFFFF" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -90,7 +129,6 @@
     <!-- solid red button -->
     <Style x:Key="Danger" TargetType="Button" BasedOn="{StaticResource Primary}">
         <Setter Property="Background" Value="{StaticResource Red}" />
-        <Setter Property="Foreground" Value="#FFFFFF" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -134,11 +172,32 @@
         </Setter>
     </Style>
 
-    <!-- text-only button, for low weight actions like Uninstall -->
+    <!-- text-only button, for low weight links -->
     <Style x:Key="Quiet" TargetType="Button" BasedOn="{StaticResource Primary}">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{StaticResource TextDim}" />
         <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="Transparent" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource Text}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="bd" Property="Opacity" Value="0.4" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- same but hovers red, for destructive actions like Uninstall -->
+    <Style x:Key="QuietDanger" TargetType="Button" BasedOn="{StaticResource Quiet}">
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -185,7 +244,7 @@
     <Style x:Key="TitlebarClose" TargetType="Button" BasedOn="{StaticResource TitlebarButton}">
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Foreground" Value="#FFFFFF" />
+                <Setter Property="Foreground" Value="{StaticResource Text}" />
             </Trigger>
         </Style.Triggers>
         <Setter Property="Template">
@@ -196,7 +255,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="bd" Property="Background" Value="#C42B1C" />
+                            <Setter TargetName="bd" Property="Background" Value="{StaticResource CloseRed}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -282,9 +341,17 @@
 
     <!-- green state chip, sized to match the Primary button box -->
     <Style x:Key="StatusChip" TargetType="Border" BasedOn="{StaticResource Tag}">
-        <Setter Property="Background" Value="#1F5FC98B" />
-        <Setter Property="BorderBrush" Value="#4D5FC98B" />
+        <Setter Property="Background" Value="{StaticResource GreenFill}" />
+        <Setter Property="BorderBrush" Value="{StaticResource GreenFillBorder}" />
         <Setter Property="Padding" Value="13,6" />
+    </Style>
+
+    <!-- tinted info panel, the semantic color comes from the call site -->
+    <Style x:Key="InfoPanel" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource AccentFill}" />
+        <Setter Property="BorderBrush" Value="{StaticResource AccentFillBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
     </Style>
 
     <!-- thin download progress bar -->

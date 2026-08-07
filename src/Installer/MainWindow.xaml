@@ -5,6 +5,7 @@
         Width="720" Height="640" MinWidth="600" MinHeight="440"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource Bg}"
+        Foreground="{StaticResource Text}"
         WindowStyle="None"
         Icon="app.ico"
         Loaded="Window_Loaded"
@@ -17,6 +18,7 @@
     <Window.Resources>
         <DataTemplate x:Key="ModCard">
             <Border Style="{StaticResource Card}" Padding="16,13">
+              <Grid>
                 <StackPanel>
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -33,13 +35,13 @@
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
                                     HorizontalAlignment="Right">
-                            <Button Style="{StaticResource Quiet}" Content="Uninstall" FontSize="11.5" Padding="6,3"
+                            <Button Style="{StaticResource QuietDanger}" Content="Uninstall" FontSize="11.5" Padding="6,3"
                                     Margin="0,0,8,0" VerticalAlignment="Center" Click="Uninstall_Click"
                                     Visibility="{Binding ShowUninstall, Converter={StaticResource BoolToVis}}" />
                             <Button Style="{StaticResource Primary}" Content="Install" Padding="18,7"
                                     Click="Install_Click"
                                     Visibility="{Binding ShowInstall, Converter={StaticResource BoolToVis}}" />
-                            <Button Style="{StaticResource Primary}" Content="{Binding UpdateLabel}" Padding="18,7"
+                            <Button Style="{StaticResource Update}" Content="{Binding UpdateLabel}" Padding="18,7"
                                     Click="Install_Click"
                                     Visibility="{Binding ShowUpdate, Converter={StaticResource BoolToVis}}" />
                             <Border Style="{StaticResource StatusChip}"
@@ -61,6 +63,17 @@
                         <ProgressBar Style="{StaticResource Progress}" Value="{Binding Progress}" />
                     </StackPanel>
                 </StackPanel>
+
+                <!-- corner badge marking a mod with a pending update -->
+                <Border Width="21" Height="21" CornerRadius="11" Background="{StaticResource Amber}"
+                        BorderBrush="{StaticResource Bg}" BorderThickness="2"
+                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-24,-24,0"
+                        ToolTip="{Binding UpdateLabel}"
+                        Visibility="{Binding ShowUpdate, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="{StaticResource Bg}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+              </Grid>
             </Border>
         </DataTemplate>
     </Window.Resources>
@@ -109,7 +122,7 @@
             </Border>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Style="{StaticResource Ghost}" Content="Refresh" Click="Refresh_Click" />
-                <Button x:Name="LaunchNonVrButton" Style="{StaticResource NonVr}" Content="Launch in Non-VR"
+                <Button x:Name="LaunchNonVrButton" Style="{StaticResource Secondary}" Content="Launch in Non-VR"
                         Padding="18,7" Margin="8,0,0,0" Click="LaunchNonVr_Click"
                         ToolTipService.ShowOnDisabled="True"
                         ToolTip="Play normally while seeing VR players' tracked movement" />
@@ -121,9 +134,9 @@
         </Grid>
 
         <!-- installer update banner, only up when a newer build exists -->
-        <Border x:Name="SelfUpdateBanner" Grid.Row="2" Margin="18,0,18,12" Padding="16,12"
-                Background="#1F4FA3E3" BorderBrush="{StaticResource Accent}" BorderThickness="1"
-                CornerRadius="8" Visibility="Collapsed">
+        <Border x:Name="SelfUpdateBanner" Grid.Row="2" Style="{StaticResource InfoPanel}" Margin="18,0,18,12"
+                Padding="16,12" Background="{StaticResource AmberFill}"
+                BorderBrush="{StaticResource AmberFillBorder}" Visibility="Collapsed">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -131,10 +144,10 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="15"
-                           Foreground="{StaticResource Accent}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                           Foreground="{StaticResource Amber}" VerticalAlignment="Center" Margin="0,0,12,0" />
                 <TextBlock x:Name="SelfUpdateTitle" Grid.Column="1" FontSize="13" FontWeight="SemiBold"
                            VerticalAlignment="Center" Margin="0,0,14,0" />
-                <Button x:Name="SelfUpdateButton" Grid.Column="2" Style="{StaticResource Primary}"
+                <Button x:Name="SelfUpdateButton" Grid.Column="2" Style="{StaticResource Update}"
                         Content="Update now" Padding="18,7" VerticalAlignment="Center" Click="SelfUpdate_Click" />
             </Grid>
         </Border>
@@ -142,8 +155,9 @@
         <!-- content -->
         <Grid Grid.Row="3" Margin="18,0,18,0">
 
-            <ScrollViewer x:Name="InstallView" VerticalScrollBarVisibility="Auto">
-                <StackPanel>
+            <!-- viewport runs 10px wider than the cards so corner badges are not clipped -->
+            <ScrollViewer x:Name="InstallView" VerticalScrollBarVisibility="Auto" Margin="0,0,-10,0">
+                <StackPanel Margin="0,0,10,0">
 
                     <!-- step 1, game folder -->
                     <Border Style="{StaticResource CardStatic}" Padding="16,13">
@@ -242,7 +256,7 @@
                         <Button Style="{StaticResource Quiet}" Content="Mod logs" FontSize="11.5" Padding="6,3"
                                 Click="OpenModLogs_Click" ToolTip="MelonLoader\Latest.log in the game folder" />
                         <TextBlock Text="•" Foreground="{StaticResource TextDim}" VerticalAlignment="Center" Margin="4,0" />
-                        <Button x:Name="RestoreVanillaButton" Style="{StaticResource Quiet}" Content="Restore vanilla"
+                        <Button x:Name="RestoreVanillaButton" Style="{StaticResource QuietDanger}" Content="Restore vanilla"
                                 FontSize="11.5" Padding="6,3" Click="RestoreVanilla_Click"
                                 ToolTip="Remove every mod and MelonLoader, back to a clean game" />
                     </StackPanel>
@@ -281,7 +295,7 @@
         </Grid>
 
         <!-- launch progress, explains the one-time il2cpp regen when it happens -->
-        <Border x:Name="LaunchOverlay" Grid.Row="0" Grid.RowSpan="5" Background="#D914171C" Visibility="Collapsed">
+        <Border x:Name="LaunchOverlay" Grid.Row="0" Grid.RowSpan="5" Background="{StaticResource Scrim}" Visibility="Collapsed">
             <Border Background="{StaticResource Panel}" BorderBrush="{StaticResource Stroke}" BorderThickness="1"
                     CornerRadius="10" Padding="22,18" Width="420"
                     HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -297,8 +311,7 @@
                                    VerticalAlignment="Center" TextWrapping="Wrap" />
                     </Grid>
 
-                    <Border x:Name="GenPanel" Margin="0,16,0,0" Padding="14,12" CornerRadius="8"
-                            Background="#1F4FA3E3" BorderBrush="{StaticResource Accent}" BorderThickness="1"
+                    <Border x:Name="GenPanel" Style="{StaticResource InfoPanel}" Margin="0,16,0,0" Padding="14,12"
                             Visibility="Collapsed">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -323,7 +336,7 @@
         </Border>
 
         <!-- themed confirm, replaces the system message box -->
-        <Border x:Name="ConfirmOverlay" Grid.Row="0" Grid.RowSpan="5" Background="#D914171C" Visibility="Collapsed">
+        <Border x:Name="ConfirmOverlay" Grid.Row="0" Grid.RowSpan="5" Background="{StaticResource Scrim}" Visibility="Collapsed">
             <Border Background="{StaticResource Panel}" BorderBrush="{StaticResource Stroke}" BorderThickness="1"
                     CornerRadius="10" Padding="22,18" Width="380"
                     HorizontalAlignment="Center" VerticalAlignment="Center">
