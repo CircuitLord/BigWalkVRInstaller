@@ -1,50 +1,46 @@
 {
-    "name":  "Big Walk Mods",
-    "installer":  {
-                      "version":  "1.0.7",
-                      "url":  "https://github.com/CircuitLord/BigWalkVRInstaller/releases/download/v1.0.7/BigWalkVRInstaller.exe",
-                      "sha256":  "b00380ef1a91fb353555697b49627099ba982b15d0698a7fc2eb159de9693630",
-                      "commit":  "22cf88583c8e09781687a8e7d846254bb315f37a"
-                  },
-    "melonLoader":  {
-                        "version":  "0.7.3",
-                        "url":  "https://github.com/LavaGang/MelonLoader/releases/download/v0.7.3/MelonLoader.x64.zip",
-                        "sha256":  "5b2b2f3d1cd42b59ec886c5bdc2663edae87a0097a4f4a8f58c0965a99dda416"
-                    },
-    "mods":  [
-                 {
-                     "id":  "BigWalkVR",
-                     "name":  "Big Walk VR",
-                     "author":  "CircuitLord",
-                     "version":  "0.1.5",
-                     "description":  "Full multiplayer-compatible SteamVR support for Big Walk.",
-                     "url":  "https://raw.githubusercontent.com/CircuitLord/BigWalkVRInstaller/main/packages/BigWalkVR/BigWalkVR-0.1.5.zip",
-                     "sha256":  "0118922ca2863c064d252036a56810a24f7363ead1aa884303e89c0ead3d1d71",
-                     "size":  20160285,
-                     "core":  true,
-                     "preserve":  [
-                                      "Mods\\BigWalkVR.ItemOffsets.json"
-                                  ],
-                     "tokenize":  [
-                                      "bigwalkvr.vrmanifest"
-                                  ]
-                 },
-                 {
-                     "id":  "SoloLaunch",
-                     "name":  "Solo Launch",
-                     "author":  "CircuitLord",
-                     "version":  "0.1.0",
-                     "description":  "Allows creating and hosting one-player worlds.",
-                     "url":  "https://raw.githubusercontent.com/CircuitLord/BigWalkVRInstaller/main/packages/SoloLaunch/SoloLaunch-0.1.0.zip",
-                     "sha256":  "7b8203a6861ecb2d21a0994d2878b220e28ee70c7963cef2d7bed51b659cd55c",
-                     "size":  3082,
-                     "core":  false,
-                     "preserve":  [
-
-                                  ],
-                     "tokenize":  [
-
-                                  ]
-                 }
-             ]
+  "name": "Big Walk Mods",
+  "installer": {
+    "version": "1.0.7",
+    "url": "https://github.com/CircuitLord/BigWalkVRInstaller/releases/download/v1.0.7/BigWalkVRInstaller.exe",
+    "sha256": "b00380ef1a91fb353555697b49627099ba982b15d0698a7fc2eb159de9693630",
+    "commit": "22cf88583c8e09781687a8e7d846254bb315f37a"
+  },
+  "melonLoader": {
+    "version": "0.7.3",
+    "url": "https://github.com/LavaGang/MelonLoader/releases/download/v0.7.3/MelonLoader.x64.zip",
+    "sha256": "5b2b2f3d1cd42b59ec886c5bdc2663edae87a0097a4f4a8f58c0965a99dda416"
+  },
+  "mods": [
+    {
+      "id": "BigWalkVR",
+      "name": "Big Walk VR",
+      "author": "CircuitLord",
+      "version": "0.1.6",
+      "description": "Full multiplayer-compatible SteamVR support for Big Walk.",
+      "url": "https://raw.githubusercontent.com/CircuitLord/BigWalkVRInstaller/main/packages/BigWalkVR/BigWalkVR-0.1.6.zip",
+      "sha256": "3d73a64c90616aba44b2f113d19bcbc37edc158217caccdd9cae4fd7f326ada0",
+      "size": 20568422,
+      "core": true,
+      "preserve": [
+        "Mods\\BigWalkVR.ItemOffsets.json"
+      ],
+      "tokenize": [
+        "bigwalkvr.vrmanifest"
+      ]
+    },
+    {
+      "id": "SoloLaunch",
+      "name": "Solo Launch",
+      "author": "CircuitLord",
+      "version": "0.1.0",
+      "description": "Allows creating and hosting one-player worlds.",
+      "url": "https://raw.githubusercontent.com/CircuitLord/BigWalkVRInstaller/main/packages/SoloLaunch/SoloLaunch-0.1.0.zip",
+      "sha256": "7b8203a6861ecb2d21a0994d2878b220e28ee70c7963cef2d7bed51b659cd55c",
+      "size": 3082,
+      "core": false,
+      "preserve": [],
+      "tokenize": []
+    }
+  ]
 }
