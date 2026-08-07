@@ -16,11 +16,11 @@
                      "id":  "BigWalkVR",
                      "name":  "Big Walk VR",
                      "author":  "CircuitLord",
-                     "version":  "0.1.4",
+                     "version":  "0.1.5",
                      "description":  "Full multiplayer-compatible SteamVR support for Big Walk.",
-                     "url":  "https://raw.githubusercontent.com/CircuitLord/BigWalkVRInstaller/main/packages/BigWalkVR/BigWalkVR-0.1.4.zip",
-                     "sha256":  "4c5ff2b80ef6d1df6e94fea5e9d9e7ce5e5fca731ddafdd75daf1e56b706d5ae",
-                     "size":  20159608,
+                     "url":  "https://raw.githubusercontent.com/CircuitLord/BigWalkVRInstaller/main/packages/BigWalkVR/BigWalkVR-0.1.5.zip",
+                     "sha256":  "0118922ca2863c064d252036a56810a24f7363ead1aa884303e89c0ead3d1d71",
+                     "size":  20160285,
                      "core":  true,
                      "preserve":  [
                                       "Mods\\BigWalkVR.ItemOffsets.json"
