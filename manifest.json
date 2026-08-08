@@ -33,11 +33,11 @@
                      "id":  "SoloLaunch",
                      "name":  "Solo Launch",
                      "author":  "CircuitLord",
-                     "version":  "0.1.0",
-                     "description":  "Allows creating and hosting one-player worlds.",
-                     "url":  "https://raw.githubusercontent.com/CircuitLord/BigWalkVRInstaller/main/packages/SoloLaunch/SoloLaunch-0.1.0.zip",
-                     "sha256":  "7b8203a6861ecb2d21a0994d2878b220e28ee70c7963cef2d7bed51b659cd55c",
-                     "size":  3082,
+                     "version":  "0.1.1",
+                     "description":  "Bypasses the initial player-count check.",
+                     "url":  "https://raw.githubusercontent.com/CircuitLord/BigWalkVRInstaller/main/packages/SoloLaunch/SoloLaunch-0.1.1.zip",
+                     "sha256":  "f040352390873eea53d2d33ad948b997699ad262e3b9a58534c02a98ab67d332",
+                     "size":  3959,
                      "core":  false,
                      "preserve":  [
 
