@@ -1,4 +1,8 @@
-# Big Walk VR Installer
+<p align="center">
+  <img src="bigwalkvr_icon.png" alt="Big Walk VR" width="160">
+</p>
+
+<h1 align="center">Big Walk VR Installer</h1>
 
 ### NOTE: The mod is not done yet, join the [Discord](https://discord.gg/MTKwud2cCP) to get updates when it releases!
 
