@@ -37,6 +37,16 @@ namespace BigWalkVRInstaller.Services
             catch { return null; }
         }
 
+        public static List<InstallRecord> ReadRecords(string gamePath)
+        {
+            var directory = RecordDir(gamePath);
+            if (!Directory.Exists(directory)) return new List<InstallRecord>();
+            return Directory.EnumerateFiles(directory, "*.json")
+                .Select(path => ReadRecord(gamePath, Path.GetFileNameWithoutExtension(path)))
+                .Where(record => record != null)
+                .ToList();
+        }
+
         public static void Install(string gamePath, ManifestMod mod, byte[] zipBytes)
         {
             ValidateId(mod.id);

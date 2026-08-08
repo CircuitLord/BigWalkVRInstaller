@@ -109,6 +109,18 @@ namespace BigWalkVRInstaller
                 Status($"Couldn't reach the download list: {ex.Message}", true);
             }
 
+            if (HasGame)
+            {
+                var listedIds = new HashSet<string>(AllMods.Select(mod => mod.Id), StringComparer.OrdinalIgnoreCase);
+                foreach (var record in PackageInstaller.ReadRecords(_settings.GamePath).Where(record => listedIds.Add(record.id)))
+                {
+                    _optional.Add(new ModEntry
+                    {
+                        Remote = new ManifestMod { id = record.id, version = record.version }
+                    });
+                }
+            }
+
             OfflineNotice.Visibility = _core.Count + _optional.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             OptionalSection.Visibility = _optional.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             SelfUpdateBanner.Visibility = _selfUpdate != null ? Visibility.Visible : Visibility.Collapsed;
@@ -223,7 +235,7 @@ namespace BigWalkVRInstaller
             {
                 Status($"{mod.Name} uninstall failed: {ex.Message}", true);
             }
-            RefreshLocalState();
+            await Refresh();
         }
 
         // game holds its dlls open, writing over them mid-session corrupts the install
@@ -260,7 +272,7 @@ namespace BigWalkVRInstaller
             {
                 Status($"Restore failed: {ex.Message}", true);
             }
-            RefreshLocalState();
+            await Refresh();
         }
 
         // ---- melonloader ----
