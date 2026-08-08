@@ -28,23 +28,6 @@
                      "tokenize":  [
                                       "bigwalkvr.vrmanifest"
                                   ]
-                 },
-                 {
-                     "id":  "SoloLaunch",
-                     "name":  "Solo Launch",
-                     "author":  "CircuitLord",
-                     "version":  "0.1.1",
-                     "description":  "Bypasses the initial player-count check.",
-                     "url":  "https://raw.githubusercontent.com/CircuitLord/BigWalkVRInstaller/main/packages/SoloLaunch/SoloLaunch-0.1.1.zip",
-                     "sha256":  "f040352390873eea53d2d33ad948b997699ad262e3b9a58534c02a98ab67d332",
-                     "size":  3959,
-                     "core":  false,
-                     "preserve":  [
-
-                                  ],
-                     "tokenize":  [
-
-                                  ]
                  }
              ]
 }
