@@ -4,7 +4,6 @@ using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 
 namespace BigWalkVRInstaller.Services
 {
@@ -25,7 +24,7 @@ namespace BigWalkVRInstaller.Services
             // cache buster, raw.githubusercontent holds manifests for a few minutes
             var bust = url + (url.Contains("?") ? "&" : "?") + "t=" + DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             var json = await Http.GetStringAsync(bust);
-            var manifest = JsonConvert.DeserializeObject<Manifest>(json);
+            var manifest = JsonUtil.Deserialize<Manifest>(json);
             if (manifest?.mods == null) throw new Exception("invalid manifest");
             return manifest;
         }

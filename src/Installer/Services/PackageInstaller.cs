@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using Newtonsoft.Json;
 
 namespace BigWalkVRInstaller.Services
 {
@@ -33,7 +32,7 @@ namespace BigWalkVRInstaller.Services
             {
                 var path = RecordPath(gamePath, id);
                 if (!File.Exists(path)) return null;
-                return JsonConvert.DeserializeObject<InstallRecord>(File.ReadAllText(path));
+                return JsonUtil.Deserialize<InstallRecord>(File.ReadAllText(path));
             }
             catch { return null; }
         }
@@ -92,7 +91,7 @@ namespace BigWalkVRInstaller.Services
         static void WriteRecord(string gamePath, InstallRecord record)
         {
             Directory.CreateDirectory(RecordDir(gamePath));
-            File.WriteAllText(RecordPath(gamePath, record.id), JsonConvert.SerializeObject(record, Formatting.Indented));
+            File.WriteAllText(RecordPath(gamePath, record.id), JsonUtil.Serialize(record));
         }
 
         static void DeleteRelative(string gamePath, string relative)

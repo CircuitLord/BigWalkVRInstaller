@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using Newtonsoft.Json;
 
 namespace BigWalkVRInstaller.Services
 {
@@ -19,7 +18,7 @@ namespace BigWalkVRInstaller.Services
             try
             {
                 if (File.Exists(FilePath))
-                    return JsonConvert.DeserializeObject<AppSettings>(File.ReadAllText(FilePath)) ?? new AppSettings();
+                    return JsonUtil.Deserialize<AppSettings>(File.ReadAllText(FilePath)) ?? new AppSettings();
             }
             catch (Exception ex)
             {
@@ -31,7 +30,7 @@ namespace BigWalkVRInstaller.Services
         public void Save()
         {
             Directory.CreateDirectory(Dir);
-            File.WriteAllText(FilePath, JsonConvert.SerializeObject(this, Formatting.Indented));
+            File.WriteAllText(FilePath, JsonUtil.Serialize(this));
         }
     }
 }

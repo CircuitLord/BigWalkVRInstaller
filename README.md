@@ -31,7 +31,7 @@ Needs the .NET Framework 4.8 SDK.
 dotnet build src/Installer -c Release
 ```
 
-Output is a single self-contained `src/Installer/bin/Release/net48/BigWalkVRInstaller.exe`. Costura merges the dependencies into it.
+Output is a single `src/Installer/bin/Release/net48/BigWalkVRInstaller.exe` using only .NET Framework assemblies.
 
 ## How it works
 
@@ -47,7 +47,7 @@ Every install records the exact list of files it wrote to `<game>\UserData\BigWa
 
 ## License
 
-MIT, see [LICENSE](LICENSE). Bundled dependencies are listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+MIT, see [LICENSE](LICENSE). Third-party software details are in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 ## Reporting a problem
 
