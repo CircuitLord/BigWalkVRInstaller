@@ -28,8 +28,8 @@ namespace BigWalkVRInstaller
         readonly ObservableCollection<LogEntry> _logs = new ObservableCollection<LogEntry>();
         AppSettings _settings;
         ReleaseInfo _selfUpdate;
-        ReleaseInfo _melonSource = MelonLoaderInstaller.Fallback;
-        bool _melonBusy;
+        ReleaseInfo _bepInExSource;
+        bool _bepInExBusy;
         GameStartupWatcher _watcher;
 
         public MainWindow()
@@ -69,6 +69,11 @@ namespace BigWalkVRInstaller
             }
 
             await Refresh();
+            if (HasGame && BepInExInstaller.IsMelonLoaderInstalled(_settings.GamePath))
+            {
+                Status("Remove MelonLoader in step 2 to continue.");
+                return;
+            }
             var vr = _core.FirstOrDefault();
             if (vr == null) return;
             if (vr.CanUpdate) Status($"An update to v{vr.Remote.version} is available");
@@ -92,16 +97,17 @@ namespace BigWalkVRInstaller
             _core.Clear();
             _optional.Clear();
             _selfUpdate = null;
+            _bepInExSource = null;
 
             try
             {
-                var manifest = await RepoClient.FetchManifest(_settings.ManifestUrl);
+                var manifest = await RepoClient.FetchManifest(AppSettings.ManifestUrl);
                 foreach (var remote in manifest.mods)
                 {
                     var entry = previous.TryGetValue(remote.id, out var live) && live.Busy ? live : new ModEntry { Remote = remote };
                     (remote.core ? _core : _optional).Add(entry);
                 }
-                if (manifest.melonLoader?.url != null) _melonSource = manifest.melonLoader;
+                _bepInExSource = manifest.bepinex;
                 if (SelfUpdater.IsUpdateAvailable(manifest.installer)) _selfUpdate = manifest.installer;
             }
             catch (Exception ex)
@@ -137,22 +143,29 @@ namespace BigWalkVRInstaller
 
         void UpdateSetupState()
         {
-            var melon = HasGame && MelonLoaderInstaller.IsInstalled(_settings.GamePath);
+            var bepinex = HasGame && BepInExInstaller.IsInstalled(_settings.GamePath);
+            var melonLoader = HasGame && BepInExInstaller.IsMelonLoaderInstalled(_settings.GamePath);
+            var unknownBootstrap = HasGame && BepInExInstaller.HasUnknownBootstrap(_settings.GamePath);
+            var loaderReady = bepinex && !melonLoader && !unknownBootstrap;
 
             GamePathText.Text = HasGame ? _settings.GamePath : "Not found. Press Change and pick your Big Walk folder.";
             OpenFolderButton.IsEnabled = HasGame;
             SetStep(GameBadge, GameBadgeText, HasGame);
 
-            var melonVersion = melon ? MelonLoaderInstaller.InstalledVersion(_settings.GamePath) : null;
-            MelonText.Text = melon
-                ? $"Ready{(melonVersion != null ? $"  •  v{melonVersion}" : "")}"
-                : "The mod loader Big Walk VR depends on.";
-            MelonButton.Content = melon ? "Reinstall" : "Install";
-            MelonButton.IsEnabled = HasGame && !_melonBusy;
-            SetStep(MelonBadge, MelonBadgeText, melon);
+            var bepinexVersion = bepinex ? BepInExInstaller.InstalledVersion(_settings.GamePath) : null;
+            BepInExText.Text = unknownBootstrap
+                ? "version.dll is active but is not part of a complete MelonLoader install. Restore vanilla or remove it manually."
+                : melonLoader
+                    ? "MelonLoader must be removed before Big Walk can launch."
+                    : bepinex
+                        ? $"Ready{(bepinexVersion != null ? $"  •  v{bepinexVersion}" : "")}"
+                        : "The mod loader Big Walk VR depends on.";
+            BepInExButton.Content = melonLoader ? "Remove MelonLoader" : bepinex ? "Reinstall" : "Install";
+            BepInExButton.IsEnabled = HasGame && _bepInExSource != null && !_bepInExBusy && !unknownBootstrap;
+            SetStep(BepInExBadge, BepInExBadgeText, loaderReady);
 
             // no launching until step 3 is done, a modless launch just confuses people
-            var canLaunch = HasGame && melon && _core.Any(m => m.IsInstalled);
+            var canLaunch = HasGame && loaderReady && _core.Any(m => m.IsInstalled);
             LaunchNonVrButton.IsEnabled = canLaunch;
             LaunchButton.IsEnabled = canLaunch;
             LaunchNonVrButton.ToolTip = canLaunch
@@ -162,10 +175,10 @@ namespace BigWalkVRInstaller
                 ? "Launch Big Walk in VR, start SteamVR first"
                 : "Finish steps 1-3 first";
             RestoreVanillaButton.IsEnabled = HasGame;
-            SetStep(ModsBadge, ModsBadgeText, melon && AllMods.Any(m => m.IsCurrent));
+            SetStep(ModsBadge, ModsBadgeText, loaderReady && AllMods.Any(m => m.IsCurrent));
 
-            // mods stay greyed out until the game folder and MelonLoader are sorted
-            var ready = HasGame && melon;
+            // mods stay greyed out until the game folder and BepInEx are sorted
+            var ready = HasGame && loaderReady;
             ModsSection.IsEnabled = ready;
             ModsSection.Opacity = ready ? 1 : 0.4;
         }
@@ -258,14 +271,14 @@ namespace BigWalkVRInstaller
         {
             if (!Ready()) return;
             if (!await Confirm("Restore vanilla Big Walk",
-                "Removes every installed mod, MelonLoader, and the Mods, Plugins, UserLibs and UserData folders. Your game saves are kept.",
+                "Permanently removes every installed mod, BepInEx, and MelonLoader.",
                 "Restore vanilla")) return;
 
             try
             {
                 foreach (var mod in AllMods.Where(m => m.IsInstalled).ToList())
                     PackageInstaller.Uninstall(_settings.GamePath, mod.Id);
-                MelonLoaderInstaller.Remove(_settings.GamePath);
+                BepInExInstaller.Remove(_settings.GamePath);
                 Status("Big Walk is back to vanilla");
             }
             catch (Exception ex)
@@ -275,45 +288,55 @@ namespace BigWalkVRInstaller
             await Refresh();
         }
 
-        // ---- melonloader ----
+        // ---- BepInEx ----
 
-        async void InstallMelon_Click(object sender, RoutedEventArgs e) => await InstallMelon();
-
-        async Task InstallMelon()
+        async void InstallBepInEx_Click(object sender, RoutedEventArgs e)
         {
-            if (!Ready()) return;
+            if (await InstallBepInEx()) await Refresh();
+        }
 
-            _melonBusy = true;
-            MelonButton.IsEnabled = false;
-            MelonProgressPanel.Visibility = Visibility.Visible;
-            MelonProgress.Value = 0;
-            MelonProgressText.Text = "Downloading MelonLoader...";
-            Status("Downloading MelonLoader...");
+        async Task<bool> InstallBepInEx()
+        {
+            if (!Ready()) return false;
+            if (BepInExInstaller.IsMelonLoaderInstalled(_settings.GamePath) && !await Confirm(
+                "Remove MelonLoader",
+                "Installing BepInEx will permanently remove MelonLoader and everything in its Mods, Plugins, and UserLibs folders. BigWalkVR settings will be migrated. No backup will be created.",
+                "Remove and install")) return false;
+
+            var installed = false;
+            _bepInExBusy = true;
+            BepInExButton.IsEnabled = false;
+            BepInExProgressPanel.Visibility = Visibility.Visible;
+            BepInExProgress.Value = 0;
+            BepInExProgressText.Text = "Downloading BepInEx...";
+            Status("Downloading BepInEx...");
             try
             {
                 // mirrored onto the status bar, the install can be kicked off from the Mods tab banner
                 var progress = new Progress<double>(p =>
                 {
-                    MelonProgress.Value = p;
-                    MelonProgressText.Text = StatusText.Text = $"Downloading MelonLoader  {p * 100:0}%";
+                    BepInExProgress.Value = p;
+                    BepInExProgressText.Text = StatusText.Text = $"Downloading BepInEx  {p * 100:0}%";
                 });
-                var bytes = await RepoClient.Download(_melonSource.url, _melonSource.sha256, progress);
+                var bytes = await RepoClient.Download(_bepInExSource.url, _bepInExSource.sha256, progress);
 
-                MelonProgressText.Text = StatusText.Text = "Installing MelonLoader...";
-                MelonProgress.Value = 1;
-                await Task.Run(() => MelonLoaderInstaller.Extract(_settings.GamePath, bytes));
-                Status($"MelonLoader v{_melonSource.version} installed");
+                BepInExProgressText.Text = StatusText.Text = "Installing BepInEx...";
+                BepInExProgress.Value = 1;
+                var migration = await Task.Run(() => BepInExInstaller.Extract(_settings.GamePath, bytes));
+                Status(migration.Migrated ? migration.Details : $"BepInEx v{_bepInExSource.version} installed");
+                installed = true;
             }
             catch (Exception ex)
             {
-                Status($"MelonLoader install failed: {ex.Message}", true);
+                Status($"BepInEx install failed: {ex.Message}", true);
             }
             finally
             {
-                _melonBusy = false;
-                MelonProgressPanel.Visibility = Visibility.Collapsed;
+                _bepInExBusy = false;
+                BepInExProgressPanel.Visibility = Visibility.Collapsed;
                 UpdateSetupState();
             }
+            return installed;
         }
 
         // ---- shell actions ----
@@ -361,7 +384,7 @@ namespace BigWalkVRInstaller
                     GenTitle.Text = "Doing one-time setup for this game version";
                     GenText.Text = "This can take a minute, please wait.";
                     GenText.Visibility = Visibility.Visible;
-                    Status("MelonLoader is doing one-time setup for this game version");
+                    Status("BepInEx is doing one-time setup for this game version");
                     break;
 
                 case LaunchPhase.GenerationDone:
@@ -437,9 +460,9 @@ namespace BigWalkVRInstaller
 
         void OpenModLogs_Click(object sender, RoutedEventArgs e) => Open(() =>
         {
-            var log = Path.Combine(_settings.GamePath, "MelonLoader", "Latest.log");
+            var log = Path.Combine(_settings.GamePath, "BepInEx", "LogOutput.log");
             if (File.Exists(log)) GameLauncher.OpenUrl(log);
-            else GameLauncher.OpenFolder(Path.Combine(_settings.GamePath, "MelonLoader"));
+            else GameLauncher.OpenFolder(Path.Combine(_settings.GamePath, "BepInEx"));
         });
 
         void OpenRepo_Click(object sender, RoutedEventArgs e) => Open(() => GameLauncher.OpenUrl(RepoUrl));

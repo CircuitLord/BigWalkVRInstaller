@@ -5,8 +5,8 @@ namespace BigWalkVRInstaller.Services
 {
     public class AppSettings
     {
+        public const string ManifestUrl = "https://raw.githubusercontent.com/CircuitLord/BigWalkVRInstaller/main/manifest-v2.json";
         public string GamePath;
-        public string ManifestUrl = "https://raw.githubusercontent.com/CircuitLord/BigWalkVRInstaller/main/manifest.json";
 
         static string Dir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "BigWalkVRInstaller");
         static string FilePath => Path.Combine(Dir, "settings.json");

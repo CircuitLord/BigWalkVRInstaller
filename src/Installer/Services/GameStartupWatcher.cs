@@ -11,15 +11,14 @@ namespace BigWalkVRInstaller.Services
 {
     public enum LaunchPhase { Generating, GenerationDone, Ready, Exited }
 
-    // tails MelonLoader/Latest.log so the launcher can explain the one-time il2cpp assembly regen
+    // tails the BepInEx log so the launcher can explain one-time interop generation
     public class GameStartupWatcher
     {
         const int PollMs = 400;
         // the process can blink while steam hands over, so only give up after a few misses in a row
         const int MissesBeforeExit = 5;
-        const string GenerationNeeded = "Assembly Generation Needed!";
-        const string GenerationDone = "Assembly Generation Successful!";
-        const string ModAlive = "[Big Walk VR]";
+        const string GenerationNeeded = "Running Cpp2IL to generate dummy assemblies";
+        const string ModAlive = "Chainloader startup complete";
 
         readonly string _logPath;
         readonly IProgress<LaunchPhase> _report;
@@ -28,11 +27,12 @@ namespace BigWalkVRInstaller.Services
         Process _game;
         bool _sawGame;
         bool _ready;
+        bool _generating;
         int _misses;
 
         public GameStartupWatcher(string gamePath, IProgress<LaunchPhase> report)
         {
-            _logPath = Path.Combine(gamePath, "MelonLoader", "Latest.log");
+            _logPath = Path.Combine(gamePath, "BepInEx", "LogOutput.log");
             _report = report;
             _offset = Length(); // everything already in there belongs to the previous run
         }
@@ -50,9 +50,18 @@ namespace BigWalkVRInstaller.Services
                 {
                     foreach (var line in ReadNewLines())
                     {
-                        if (line.IndexOf(GenerationNeeded, StringComparison.Ordinal) >= 0) Report(LaunchPhase.Generating);
-                        else if (line.IndexOf(GenerationDone, StringComparison.Ordinal) >= 0) Report(LaunchPhase.GenerationDone);
-                        else if (line.IndexOf(ModAlive, StringComparison.Ordinal) >= 0) { _ready = true; Report(LaunchPhase.Ready); break; }
+                        if (line.IndexOf(GenerationNeeded, StringComparison.Ordinal) >= 0)
+                        {
+                            _generating = true;
+                            Report(LaunchPhase.Generating);
+                        }
+                        else if (line.IndexOf(ModAlive, StringComparison.Ordinal) >= 0)
+                        {
+                            if (_generating) Report(LaunchPhase.GenerationDone);
+                            _ready = true;
+                            Report(LaunchPhase.Ready);
+                            break;
+                        }
                     }
                 }
 
@@ -105,7 +114,7 @@ namespace BigWalkVRInstaller.Services
                 if (!File.Exists(_logPath)) return empty;
                 using (var stream = new FileStream(_logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
                 {
-                    if (stream.Length < _offset) _offset = 0; // melonloader recreated the log, new session
+                    if (stream.Length < _offset) _offset = 0; // BepInEx recreated the log
                     var pending = stream.Length - _offset;
                     if (pending <= 0) return empty;
 

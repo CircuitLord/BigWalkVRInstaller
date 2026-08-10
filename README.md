@@ -18,10 +18,10 @@ Big Walk VR and this installer are community projects, not affiliated with or en
 ## What it does
 
 1. **Finds Big Walk** through your Steam install.
-2. **Sets up MelonLoader**, the mod loader Big Walk VR depends on.
+2. **Sets up BepInEx**, the mod loader Big Walk VR depends on.
 3. **Installs the mod**, plus any optional add-ons.
 
-Then start SteamVR and press Launch in VR. Launching Big Walk normally through Steam or pressing Launch in Non-VR starts the game without local VR while keeping the mod installed and showing VR players' tracked movement.
+Launching Big Walk normally through Steam stays non-VR while showing VR players' tracked movement. To play in VR, start SteamVR and use the installer's Launch in VR button or the Big Walk VR entry in SteamVR.
 
 ## Building from source
 
@@ -35,15 +35,15 @@ Output is a single `src/Installer/bin/Release/net48/BigWalkVRInstaller.exe` usin
 
 ## How it works
 
-`manifest.json` in this repo lists the installer version, the MelonLoader build to use, and every available mod, each with a download URL and a SHA-256 hash. The app reads it on startup, compares against what's installed, and shows Install or Update accordingly.
+`manifest-v2.json` lists the installer version, BepInEx build, and available BepInEx mods with their download URLs and SHA-256 hashes. The app requires schema version 2, compares it against what is installed, and shows Install or Update accordingly. The legacy `manifest.json` remains frozen on MelonLoader packages and only advertises installer updates.
 
-A mod package is a zip that mirrors the Big Walk folder, so installing is extract-in-place. Each entry can declare:
+A mod package is a zip that mirrors the Big Walk folder, so installing is extract-in-place. Thunderstore metadata at the archive root is ignored. Each entry can declare:
 
 - `core`: the headline mod. Everything else lists under Optional add-ons.
 - `preserve`: files left alone if they already exist, so your calibration and configs survive updates.
 - `tokenize`: files where `{{GAMEDIR}}` and `{{GAMEDIR_JSON}}` are replaced with your game folder on install, used for the SteamVR app manifest.
 
-Every install records the exact list of files it wrote to `<game>\UserData\BigWalkVRInstaller\<id>.json`. Updates delete files the previous version shipped that the new one no longer does, and uninstall removes exactly what was recorded, nothing else.
+Every install records the exact list of files it wrote to `<game>\UserData\BigWalkVRInstaller\<id>.json`, including runtime payload destinations deployed by the preloader. Updates delete files the previous version shipped that the new one no longer does, and uninstall removes exactly what was recorded, nothing else.
 
 ## License
 
@@ -51,4 +51,4 @@ MIT, see [LICENSE](LICENSE). Third-party software details are in [THIRD-PARTY-NO
 
 ## Reporting a problem
 
-Open an issue with what you did and what happened. The Logs tab in the app has the installer's own history, and the Mod logs button opens `MelonLoader\Latest.log` in your game folder, which is where the mod itself reports errors.
+Open an issue with what you did and what happened. The Logs tab in the app has the installer's own history, and the Mod logs button opens `BepInEx\LogOutput.log` in your game folder, which is where the mod itself reports errors.

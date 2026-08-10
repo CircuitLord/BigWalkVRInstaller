@@ -9,6 +9,12 @@ namespace BigWalkVRInstaller.Services
     // installs mod packages as zips that mirror the game folder layout
     public static class PackageInstaller
     {
+        const string RuntimePayloadPrefix = "BepInEx\\patchers\\BigWalkVR.Runtime\\";
+        static readonly HashSet<string> DistributionMetadata = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".package.json", "manifest.json", "icon.png", "README.md"
+        };
+
         static string RecordDir(string gamePath) => Path.Combine(gamePath, "UserData", "BigWalkVRInstaller");
 
         static string RecordPath(string gamePath, string id)
@@ -62,6 +68,7 @@ namespace BigWalkVRInstaller.Services
                 {
                     if (entry.Name.Length == 0) continue; // directory entry
                     var relative = Normalize(entry.FullName);
+                    if (DistributionMetadata.Contains(relative)) continue;
                     var dest = ResolveInside(gamePath, relative);
 
                     written.Add(relative);
@@ -75,15 +82,17 @@ namespace BigWalkVRInstaller.Services
 
             if (written.Count == 0) throw new Exception("package is empty");
 
+            written = IncludeDeployedPaths(written);
+
             // drop files the previous version shipped that this one dropped
             if (previous?.files != null)
             {
                 var current = new HashSet<string>(written, StringComparer.OrdinalIgnoreCase);
-                foreach (var stale in previous.files.Where(f => !current.Contains(f)))
+                foreach (var stale in IncludeDeployedPaths(previous.files).Where(f => !current.Contains(f)))
                     DeleteRelative(gamePath, stale);
             }
 
-            WriteRecord(gamePath, new InstallRecord { id = mod.id, version = mod.version, files = written });
+            WriteRecord(gamePath, new InstallRecord { id = mod.id, version = mod.version, runtime = "BepInEx", files = written });
         }
 
         public static void Uninstall(string gamePath, string id)
@@ -91,11 +100,17 @@ namespace BigWalkVRInstaller.Services
             ValidateId(id);
             var record = ReadRecord(gamePath, id);
             if (record?.files != null)
-                foreach (var relative in record.files)
+                foreach (var relative in IncludeDeployedPaths(record.files))
                     DeleteRelative(gamePath, relative);
 
             var path = RecordPath(gamePath, id);
             if (File.Exists(path)) File.Delete(path);
+        }
+
+        internal static void ClearRecords(string gamePath)
+        {
+            var directory = RecordDir(gamePath);
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
         }
 
         static void WriteRecord(string gamePath, InstallRecord record)
@@ -104,7 +119,17 @@ namespace BigWalkVRInstaller.Services
             File.WriteAllText(RecordPath(gamePath, record.id), JsonUtil.Serialize(record));
         }
 
-        static void DeleteRelative(string gamePath, string relative)
+        static List<string> IncludeDeployedPaths(IEnumerable<string> paths)
+        {
+            var result = paths.ToList();
+            result.AddRange(result
+                .Where(path => path.StartsWith(RuntimePayloadPrefix, StringComparison.OrdinalIgnoreCase))
+                .Select(path => path.Substring(RuntimePayloadPrefix.Length))
+                .ToList());
+            return result.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        }
+
+        internal static void DeleteRelative(string gamePath, string relative)
         {
             try
             {

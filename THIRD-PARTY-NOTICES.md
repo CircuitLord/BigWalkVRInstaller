@@ -2,5 +2,5 @@
 
 ## Not bundled
 
-MelonLoader (Apache License 2.0, Copyright Lava Gang) is downloaded from its
-official GitHub releases at install time, not redistributed here.
+BepInEx (LGPL-2.1, Copyright BepInEx contributors) is downloaded from its
+Thunderstore package at install time, not redistributed here.

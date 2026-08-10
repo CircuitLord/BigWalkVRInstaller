@@ -188,7 +188,7 @@
                         </Grid>
                     </Border>
 
-                    <!-- step 2, melonloader, gates everything below -->
+                    <!-- step 2, BepInEx, gates everything below -->
                     <Border Style="{StaticResource CardStatic}" Padding="16,13">
                         <StackPanel>
                             <Grid>
@@ -197,25 +197,25 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <Border x:Name="MelonBadge" Grid.Column="0" Width="24" Height="24" CornerRadius="12"
+                                <Border x:Name="BepInExBadge" Grid.Column="0" Width="24" Height="24" CornerRadius="12"
                                         Background="{StaticResource Hover}" BorderBrush="{StaticResource Stroke}"
                                         BorderThickness="1" VerticalAlignment="Center" Margin="0,0,13,0">
-                                    <TextBlock x:Name="MelonBadgeText" Text="2" Tag="2" FontSize="11.5" FontWeight="SemiBold"
+                                    <TextBlock x:Name="BepInExBadgeText" Text="2" Tag="2" FontSize="11.5" FontWeight="SemiBold"
                                                Foreground="{StaticResource TextDim}"
                                                HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 </Border>
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,14,0">
-                                    <TextBlock Text="Set up MelonLoader" FontSize="13.5" FontWeight="SemiBold" />
-                                    <TextBlock x:Name="MelonText" FontSize="11.5" Foreground="{StaticResource TextDim}"
+                                    <TextBlock Text="Set up BepInEx" FontSize="13.5" FontWeight="SemiBold" />
+                                    <TextBlock x:Name="BepInExText" FontSize="11.5" Foreground="{StaticResource TextDim}"
                                                TextWrapping="Wrap" Margin="0,3,0,0" />
                                 </StackPanel>
-                                <Button x:Name="MelonButton" Grid.Column="2" Style="{StaticResource Primary}" Padding="18,7"
-                                        VerticalAlignment="Center" Click="InstallMelon_Click" />
+                                <Button x:Name="BepInExButton" Grid.Column="2" Style="{StaticResource Primary}" Padding="18,7"
+                                        VerticalAlignment="Center" Click="InstallBepInEx_Click" />
                             </Grid>
-                            <StackPanel x:Name="MelonProgressPanel" Margin="0,12,0,2" Visibility="Collapsed">
-                                <TextBlock x:Name="MelonProgressText" FontSize="11.5" Foreground="{StaticResource TextDim}"
+                            <StackPanel x:Name="BepInExProgressPanel" Margin="0,12,0,2" Visibility="Collapsed">
+                                <TextBlock x:Name="BepInExProgressText" FontSize="11.5" Foreground="{StaticResource TextDim}"
                                            Margin="0,0,0,6" />
-                                <ProgressBar x:Name="MelonProgress" Style="{StaticResource Progress}" />
+                                <ProgressBar x:Name="BepInExProgress" Style="{StaticResource Progress}" />
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -254,11 +254,11 @@
                                 Click="OpenRepo_Click" />
                         <TextBlock Text="•" Foreground="{StaticResource TextDim}" VerticalAlignment="Center" Margin="4,0" />
                         <Button Style="{StaticResource Quiet}" Content="Mod logs" FontSize="11.5" Padding="6,3"
-                                Click="OpenModLogs_Click" ToolTip="MelonLoader\Latest.log in the game folder" />
+                                Click="OpenModLogs_Click" ToolTip="BepInEx\LogOutput.log in the game folder" />
                         <TextBlock Text="•" Foreground="{StaticResource TextDim}" VerticalAlignment="Center" Margin="4,0" />
                         <Button x:Name="RestoreVanillaButton" Style="{StaticResource QuietDanger}" Content="Restore vanilla"
                                 FontSize="11.5" Padding="6,3" Click="RestoreVanilla_Click"
-                                ToolTip="Remove every mod and MelonLoader, back to a clean game" />
+                                ToolTip="Remove every installed BepInEx mod and return to a clean game" />
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>

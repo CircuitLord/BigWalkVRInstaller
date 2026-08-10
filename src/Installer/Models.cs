@@ -20,12 +20,13 @@ namespace BigWalkVRInstaller
         protected void Notify(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
-    // manifest.json shapes
+    // manifest-v2.json shapes
     public class Manifest
     {
+        public int schemaVersion;
         public string name;
         public ReleaseInfo installer;
-        public ReleaseInfo melonLoader;
+        public ReleaseInfo bepinex;
         public List<ManifestMod> mods = new List<ManifestMod>();
     }
 
@@ -59,6 +60,7 @@ namespace BigWalkVRInstaller
     {
         public string id;
         public string version;
+        public string runtime;
         public List<string> files = new List<string>();
     }
 
@@ -101,7 +103,7 @@ namespace BigWalkVRInstaller
             get
             {
                 var author = string.IsNullOrEmpty(Remote.author) ? "unknown" : Remote.author;
-                var version = CanUpdate ? $"v{InstalledVersion} → v{Remote.version}" : $"v{InstalledVersion ?? Remote.version}";
+                var version = !IsInstalled ? "Not installed" : CanUpdate ? $"v{InstalledVersion} → v{Remote.version}" : $"v{InstalledVersion}";
                 var size = Remote.size > 0 ? $"  •  {FormatSize(Remote.size)}" : "";
                 return $"{author}  •  {version}{size}";
             }
