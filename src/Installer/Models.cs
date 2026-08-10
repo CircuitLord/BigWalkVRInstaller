@@ -112,6 +112,7 @@ namespace BigWalkVRInstaller
         static string FormatSize(long bytes) =>
             bytes >= 1024 * 1024 ? $"{bytes / 1024d / 1024d:0.#} MB" : $"{Math.Max(1, bytes / 1024)} KB";
 
+        public string InstallLabel => $"Install v{Remote.version}";
         public string UpdateLabel => $"Update to v{Remote.version}";
 
         void NotifyState()

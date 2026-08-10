@@ -38,7 +38,7 @@
                             <Button Style="{StaticResource QuietDanger}" Content="Uninstall" FontSize="11.5" Padding="6,3"
                                     Margin="0,0,8,0" VerticalAlignment="Center" Click="Uninstall_Click"
                                     Visibility="{Binding ShowUninstall, Converter={StaticResource BoolToVis}}" />
-                            <Button Style="{StaticResource Primary}" Content="Install" Padding="18,7"
+                            <Button Style="{StaticResource Primary}" Content="{Binding InstallLabel}" Padding="18,7"
                                     Click="Install_Click"
                                     Visibility="{Binding ShowInstall, Converter={StaticResource BoolToVis}}" />
                             <Button Style="{StaticResource Update}" Content="{Binding UpdateLabel}" Padding="18,7"
