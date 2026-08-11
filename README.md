@@ -21,7 +21,7 @@ Big Walk VR and this installer are community projects, not affiliated with or en
 2. **Sets up BepInEx**, the mod loader Big Walk VR depends on.
 3. **Installs the mod**, plus any optional add-ons.
 
-Launching Big Walk normally through Steam stays non-VR while showing VR players' tracked movement. To play in VR, start SteamVR and use the installer's Launch in VR button or the Big Walk VR entry in SteamVR.
+Launching Big Walk normally through Steam stays non-VR while showing VR players' tracked movement. To play in VR, start SteamVR and use the installer's Launch in VR button.
 
 ## Building from source
 
