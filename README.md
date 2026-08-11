@@ -49,6 +49,6 @@ Every install records the exact list of files it wrote to `<game>\UserData\BigWa
 
 MIT, see [LICENSE](LICENSE). Third-party software details are in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
-## Reporting a problem
+## Supporting
 
-Open an issue with what you did and what happened. The Logs tab in the app has the installer's own history, and the Mod logs button opens `BepInEx\LogOutput.log` in your game folder, which is where the mod itself reports errors.
+If you've enjoyed something I've made, and want to support my work, see my ko-fi! https://ko-fi.com/circuitlord 
