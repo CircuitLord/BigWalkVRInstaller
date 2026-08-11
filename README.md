@@ -35,7 +35,7 @@ Output is a single `src/Installer/bin/Release/net48/BigWalkVRInstaller.exe` usin
 
 ## How it works
 
-`manifest-v2.json` lists the installer version, BepInEx build, and available BepInEx mods with their download URLs and SHA-256 hashes. The app requires schema version 2, compares it against what is installed, and shows Install or Update accordingly. The legacy `manifest.json` remains frozen on MelonLoader packages and only advertises installer updates.
+`manifest-v2.json` lists the installer version, BepInEx build, and available BepInEx mods with their download URLs and SHA-256 hashes. The app requires schema version 2, compares it against what is installed, and shows Install or Update accordingly. The legacy `manifest.json` exists only to provide an upgrade path from the old MelonLoader version to the new installer with manifest-v2.
 
 A mod package is a zip that mirrors the Big Walk folder, so installing is extract-in-place. Thunderstore metadata at the archive root is ignored. Each entry can declare:
 
