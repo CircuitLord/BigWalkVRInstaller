@@ -12,8 +12,15 @@ This is a utility to automatically install the VR mod and associated files, and 
 
 Big Walk VR and this installer are community projects, not affiliated with or endorsed by House House. Use at your own risk.
 
-
 **[Download BigWalkVRInstaller](https://github.com/CircuitLord/BigWalkVRInstaller/releases/latest/download/BigWalkVRInstaller.exe)**
+
+
+## Do other players need the mod?
+No, you can play with anyone. Only the host matters:  
+**Host has the mod:** other modded players see your real VR hands.  
+**Host doesn't:** everyone sees your hands approximated with the game's built-in poses.
+
+The mod is not VR-only, flatscreen players can install it to see VR players' hands while still playing normally!
 
 ## What it does
 
