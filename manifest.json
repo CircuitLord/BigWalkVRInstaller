@@ -3,8 +3,8 @@
     "installer":  {
                       "version":  "1.1.0",
                       "url":  "https://github.com/CircuitLord/BigWalkVRInstaller/releases/download/v1.1.0/BigWalkVRInstaller.exe",
-                      "sha256":  "aa0939485d24ab4f5e8d1f2dff313a501ecec46c48ebac0d916d0ec6cf1a01d7",
-                      "commit":  "5fad90f62efa03e0f056ee8ea1105d2c3f625afe"
+                      "sha256":  "c944712a92e60da7f5c1963ab3b663a1ad5f71d592e58306e146fee374d205bc",
+                      "commit":  "b3a6a845d169a1151aec62861f7b9e2d05e8af82"
                   },
     "melonLoader":  {
                         "version":  "0.7.3",
