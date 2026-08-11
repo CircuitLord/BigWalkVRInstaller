@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace BigWalkVRInstaller.Services
 {
-    public enum LaunchPhase { Generating, GenerationDone, Ready, Exited }
+    public enum LaunchPhase { Generating, GenerationDone, Ready, Exited, Crashed }
 
     // tails the BepInEx log so the launcher can explain one-time interop generation
     public class GameStartupWatcher
@@ -21,6 +21,7 @@ namespace BigWalkVRInstaller.Services
         const string ModAlive = "Chainloader startup complete";
 
         readonly string _logPath;
+        readonly string _crashMarkerPath;
         readonly IProgress<LaunchPhase> _report;
         readonly CancellationTokenSource _cancel = new CancellationTokenSource();
         long _offset;
@@ -33,8 +34,11 @@ namespace BigWalkVRInstaller.Services
         public GameStartupWatcher(string gamePath, IProgress<LaunchPhase> report)
         {
             _logPath = Path.Combine(gamePath, "BepInEx", "LogOutput.log");
+            _crashMarkerPath = Path.Combine(gamePath, "UserData", "BigWalkVRInstaller", "GameSession.lock");
             _report = report;
             _offset = Length(); // everything already in there belongs to the previous run
+            Directory.CreateDirectory(Path.GetDirectoryName(_crashMarkerPath));
+            File.WriteAllText(_crashMarkerPath, DateTime.UtcNow.ToString("O"));
         }
 
         public void Start() => Task.Run(() => Loop(_cancel.Token));
@@ -66,7 +70,11 @@ namespace BigWalkVRInstaller.Services
                 }
 
                 if (Alive()) { _sawGame = true; _misses = 0; }
-                else if (_sawGame && ++_misses >= MissesBeforeExit) { Report(LaunchPhase.Exited); return; }
+                else if (_sawGame && ++_misses >= MissesBeforeExit)
+                {
+                    Report(ConsumeCrashMarker() ? LaunchPhase.Crashed : LaunchPhase.Exited);
+                    return;
+                }
 
                 try { await Task.Delay(PollMs, token); }
                 catch (TaskCanceledException) { return; }
@@ -91,9 +99,17 @@ namespace BigWalkVRInstaller.Services
             catch { return null; }
         }
 
+        bool ConsumeCrashMarker()
+        {
+            var crashed = File.Exists(_crashMarkerPath);
+            if (crashed) File.Delete(_crashMarkerPath);
+            return crashed;
+        }
+
         // best effort, the tracked process is the one that gets stopped
         public void StopGame()
         {
+            File.Delete(_crashMarkerPath);
             var game = _game ?? Find();
             if (game == null) return;
             try { game.Kill(); }

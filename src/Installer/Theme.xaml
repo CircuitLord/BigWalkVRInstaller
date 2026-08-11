@@ -20,6 +20,8 @@
     <Color x:Key="AmberHoverColor">#F4BA63</Color>
     <Color x:Key="RedColor">#E06C75</Color>
     <Color x:Key="RedHoverColor">#E9838B</Color>
+    <Color x:Key="SupportColor">#FF5E5B</Color>
+    <Color x:Key="SupportHoverColor">#FF7774</Color>
 
     <SolidColorBrush x:Key="Bg" Color="{StaticResource BgColor}" />
     <SolidColorBrush x:Key="Panel" Color="{StaticResource PanelColor}" />
@@ -44,6 +46,11 @@
     <SolidColorBrush x:Key="AmberFillBorder" Color="{StaticResource AmberColor}" Opacity="0.3" />
     <SolidColorBrush x:Key="Red" Color="{StaticResource RedColor}" />
     <SolidColorBrush x:Key="RedHover" Color="{StaticResource RedHoverColor}" />
+    <SolidColorBrush x:Key="Support" Color="{StaticResource SupportColor}" />
+    <SolidColorBrush x:Key="SupportHover" Color="{StaticResource SupportHoverColor}" />
+    <SolidColorBrush x:Key="SupportFill" Color="{StaticResource SupportColor}" Opacity="0.12" />
+    <SolidColorBrush x:Key="SupportFillHover" Color="{StaticResource SupportColor}" Opacity="0.2" />
+    <SolidColorBrush x:Key="SupportFillBorder" Color="{StaticResource SupportColor}" Opacity="0.45" />
     <!-- windows close button red, deliberately not our palette red -->
     <SolidColorBrush x:Key="CloseRed" Color="#C42B1C" />
 
@@ -190,6 +197,56 @@
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="bd" Property="Opacity" Value="0.4" />
                         </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="SupportButton" TargetType="Button" BasedOn="{StaticResource Primary}">
+        <Setter Property="Background" Value="{StaticResource SupportFill}" />
+        <Setter Property="Foreground" Value="{StaticResource Support}" />
+        <Setter Property="Padding" Value="16,7" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}" BorderBrush="{StaticResource SupportFillBorder}"
+                            BorderThickness="1" CornerRadius="16" Padding="{TemplateBinding Padding}">
+                        <Border.RenderTransform>
+                            <TranslateTransform x:Name="lift" />
+                        </Border.RenderTransform>
+                        <Border.Effect>
+                            <DropShadowEffect x:Name="glow" Color="{StaticResource SupportColor}" BlurRadius="12"
+                                              ShadowDepth="0" Opacity="0" />
+                        </Border.Effect>
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{StaticResource SupportFillHover}" />
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource Support}" />
+                            <Setter Property="Foreground" Value="{StaticResource SupportHover}" />
+                        </Trigger>
+                        <EventTrigger RoutedEvent="MouseEnter">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="glow" Storyboard.TargetProperty="Opacity"
+                                                     To="0.35" Duration="0:0:0.16" />
+                                    <DoubleAnimation Storyboard.TargetName="lift" Storyboard.TargetProperty="Y"
+                                                     To="-1" Duration="0:0:0.16" />
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                        <EventTrigger RoutedEvent="MouseLeave">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="glow" Storyboard.TargetProperty="Opacity"
+                                                     To="0" Duration="0:0:0.2" />
+                                    <DoubleAnimation Storyboard.TargetName="lift" Storyboard.TargetProperty="Y"
+                                                     To="0" Duration="0:0:0.2" />
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

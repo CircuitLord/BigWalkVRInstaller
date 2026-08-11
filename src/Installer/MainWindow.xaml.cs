@@ -22,6 +22,8 @@ namespace BigWalkVRInstaller
     public partial class MainWindow : Window
     {
         const string RepoUrl = "https://github.com/CircuitLord/BigWalkVRInstaller";
+        const string DiscordUrl = "https://discord.gg/MTKwud2cCP";
+        const string SupportUrl = "https://ko-fi.com/circuitlord";
 
         readonly ObservableCollection<ModEntry> _core = new ObservableCollection<ModEntry>();
         readonly ObservableCollection<ModEntry> _optional = new ObservableCollection<ModEntry>();
@@ -175,6 +177,7 @@ namespace BigWalkVRInstaller
                 ? "Launch Big Walk in VR, start SteamVR first"
                 : "Finish steps 1-3 first";
             RestoreVanillaButton.IsEnabled = HasGame;
+            CrashReportButton.IsEnabled = HasGame;
             SetStep(ModsBadge, ModsBadgeText, loaderReady && AllMods.Any(m => m.IsCurrent));
 
             // mods stay greyed out until the game folder and BepInEx are sorted
@@ -374,7 +377,7 @@ namespace BigWalkVRInstaller
             _watcher.Start();
         }
 
-        void OnLaunchPhase(LaunchPhase phase)
+        async void OnLaunchPhase(LaunchPhase phase)
         {
             switch (phase)
             {
@@ -403,6 +406,12 @@ namespace BigWalkVRInstaller
                 case LaunchPhase.Exited:
                     CloseLaunchModal();
                     Status("Big Walk closed");
+                    break;
+
+                case LaunchPhase.Crashed:
+                    CloseLaunchModal();
+                    Status("Big Walk may have crashed", true);
+                    await PromptCrashReport("Big Walk may have crashed");
                     break;
             }
         }
@@ -465,7 +474,41 @@ namespace BigWalkVRInstaller
             else GameLauncher.OpenFolder(Path.Combine(_settings.GamePath, "BepInEx"));
         });
 
+        void OpenDiscord_Click(object sender, RoutedEventArgs e) => Open(() => GameLauncher.OpenUrl(DiscordUrl));
+
+        void OpenSupport_Click(object sender, RoutedEventArgs e) => Open(() => GameLauncher.OpenUrl(SupportUrl));
+
         void OpenRepo_Click(object sender, RoutedEventArgs e) => Open(() => GameLauncher.OpenUrl(RepoUrl));
+
+        async void CreateCrashReport_Click(object sender, RoutedEventArgs e) => await PromptCrashReport("Create crash report");
+
+        async Task PromptCrashReport(string title)
+        {
+            if (await Confirm(
+                title,
+                "Create a ZIP containing the BepInEx and Unity logs. Logs may contain personal or device details, so review them before sharing.",
+                "Create report",
+                false)) await CreateCrashReport();
+        }
+
+        async Task CreateCrashReport()
+        {
+            try
+            {
+                var report = CrashReportService.Create(_settings.GamePath);
+                GameLauncher.SelectFile(report);
+                Status("Crash report created on the Desktop.");
+                if (await Confirm(
+                    "Crash report ready",
+                    "The ZIP is selected in Explorer. You can send it in the #support channel in the Big Walk VR Discord.",
+                    "Open Discord",
+                    false)) GameLauncher.OpenUrl(DiscordUrl);
+            }
+            catch (Exception ex)
+            {
+                Status($"Couldn't create the crash report: {ex.Message}", true);
+            }
+        }
 
         void Open(Action action)
         {
@@ -503,12 +546,13 @@ namespace BigWalkVRInstaller
 
         TaskCompletionSource<bool> _confirm;
 
-        Task<bool> Confirm(string title, string text, string okLabel)
+        Task<bool> Confirm(string title, string text, string okLabel, bool danger = true)
         {
             if (_confirm != null) return Task.FromResult(false); // already asking something else
             ConfirmTitle.Text = title;
             ConfirmText.Text = text;
             ConfirmOk.Content = okLabel;
+            ConfirmOk.Style = (Style)FindResource(danger ? "Danger" : "Primary");
             ConfirmOverlay.Visibility = Visibility.Visible;
             _confirm = new TaskCompletionSource<bool>();
             return _confirm.Task;
@@ -517,8 +561,9 @@ namespace BigWalkVRInstaller
         void CloseConfirm(bool result)
         {
             ConfirmOverlay.Visibility = Visibility.Collapsed;
-            _confirm?.TrySetResult(result);
+            var confirm = _confirm;
             _confirm = null;
+            confirm?.TrySetResult(result);
         }
 
         void ConfirmOk_Click(object sender, RoutedEventArgs e) => CloseConfirm(true);

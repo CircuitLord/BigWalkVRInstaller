@@ -249,16 +249,33 @@
                                Visibility="Collapsed" />
 
                     <!-- footer help -->
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,22,0,10">
-                        <Button Style="{StaticResource Quiet}" Content="GitHub" FontSize="11.5" Padding="6,3"
-                                Click="OpenRepo_Click" />
-                        <TextBlock Text="•" Foreground="{StaticResource TextDim}" VerticalAlignment="Center" Margin="4,0" />
-                        <Button Style="{StaticResource Quiet}" Content="Mod logs" FontSize="11.5" Padding="6,3"
-                                Click="OpenModLogs_Click" ToolTip="BepInEx\LogOutput.log in the game folder" />
-                        <TextBlock Text="•" Foreground="{StaticResource TextDim}" VerticalAlignment="Center" Margin="4,0" />
-                        <Button x:Name="RestoreVanillaButton" Style="{StaticResource QuietDanger}" Content="Restore vanilla"
-                                FontSize="11.5" Padding="6,3" Click="RestoreVanilla_Click"
-                                ToolTip="Remove every installed BepInEx mod and return to a clean game" />
+                    <StackPanel HorizontalAlignment="Center" Margin="0,22,0,10">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Button Style="{StaticResource Quiet}" Content="Discord" FontSize="11.5" Padding="6,3"
+                                    Click="OpenDiscord_Click" />
+                            <TextBlock Text="•" Foreground="{StaticResource TextDim}" VerticalAlignment="Center" Margin="4,0" />
+                            <Button Style="{StaticResource Quiet}" Content="GitHub" FontSize="11.5" Padding="6,3"
+                                    Click="OpenRepo_Click" />
+                            <TextBlock Text="•" Foreground="{StaticResource TextDim}" VerticalAlignment="Center" Margin="4,0" />
+                            <Button Style="{StaticResource Quiet}" Content="Mod logs" FontSize="11.5" Padding="6,3"
+                                    Click="OpenModLogs_Click" ToolTip="BepInEx\LogOutput.log in the game folder" />
+                            <TextBlock Text="•" Foreground="{StaticResource TextDim}" VerticalAlignment="Center" Margin="4,0" />
+                            <Button x:Name="CrashReportButton" Style="{StaticResource Quiet}" Content="Create crash report"
+                                    FontSize="11.5" Padding="6,3" Click="CreateCrashReport_Click"
+                                    ToolTip="Package the BepInEx and Unity logs for Discord" />
+                            <TextBlock Text="•" Foreground="{StaticResource TextDim}" VerticalAlignment="Center" Margin="4,0" />
+                            <Button x:Name="RestoreVanillaButton" Style="{StaticResource QuietDanger}" Content="Restore vanilla"
+                                    FontSize="11.5" Padding="6,3" Click="RestoreVanilla_Click"
+                                    ToolTip="Remove every installed BepInEx mod and return to a clean game" />
+                        </StackPanel>
+                        <TextBlock Text="Made for the love of VR by CircuitLord" FontSize="11.5" FontStyle="Italic"
+                                   Foreground="{StaticResource TextDim}" HorizontalAlignment="Center" Margin="0,26,0,5" />
+                        <Button Style="{StaticResource SupportButton}" HorizontalAlignment="Center" Click="OpenSupport_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="♥" Margin="0,0,7,0" />
+                                <TextBlock Text="Support" />
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>

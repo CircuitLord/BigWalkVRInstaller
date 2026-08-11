@@ -38,6 +38,8 @@ namespace BigWalkVRInstaller.Services
             Process.Start("explorer.exe", $"\"{path}\"");
         }
 
+        public static void SelectFile(string path) => Process.Start("explorer.exe", $"/select,\"{path}\"");
+
         public static void OpenUrl(string url) => Process.Start(url);
     }
 }
