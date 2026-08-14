@@ -16,11 +16,9 @@ Big Walk VR and this installer are community projects, not affiliated with or en
 
 
 ## Do other players need the mod?
-No, you can play with anyone. Only the host matters:  
-**Host has the mod:** other modded players see your real VR hands.  
-**Host doesn't:** everyone sees your hands approximated with the game's built-in poses.
+The **host and other players** need the mod installed to **see your VR hands**.
 
-The mod is not VR-only, flatscreen players can install it to see VR players' hands while still playing normally!
+Your non-vr friends can install the mod and still play in flatscreen!
 
 ## What it does
 
