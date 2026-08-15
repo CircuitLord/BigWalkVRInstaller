@@ -8,12 +8,21 @@ namespace BigWalkVRInstaller.Services
     public static class GameLauncher
     {
         public const string ProcessName = "Big Walk";
+        const string VrMarkerFileName = "bigwalkvr-launch-vr";
 
         public static bool IsRunning() => Process.GetProcessesByName(ProcessName).Any();
 
-        public static void LaunchNonVr(string gamePath) => Launch(gamePath, "");
+        public static void LaunchNonVr(string gamePath)
+        {
+            File.Delete(Path.Combine(gamePath, VrMarkerFileName));
+            Launch(gamePath, "-bigwalkvr-non-vr");
+        }
 
-        public static void LaunchVr(string gamePath) => Launch(gamePath, "-bigwalkvr-vr -force-d3d11");
+        public static void LaunchVr(string gamePath)
+        {
+            File.WriteAllText(Path.Combine(gamePath, VrMarkerFileName), "");
+            Launch(gamePath, "-bigwalkvr-vr -force-d3d11");
+        }
 
         // steam has to own the launch so the game gets its app context
         static void Launch(string gamePath, string arguments)
