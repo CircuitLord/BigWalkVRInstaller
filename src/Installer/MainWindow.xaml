@@ -26,7 +26,14 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,14,0">
-                            <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" />
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" />
+                                <Border Style="{StaticResource Tag}" Padding="6,1" Margin="8,0,0,0"
+                                        Background="{StaticResource AmberFill}" BorderBrush="{StaticResource AmberFillBorder}"
+                                        Visibility="{Binding IsBeta, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="BETA" FontSize="9.5" FontWeight="SemiBold" Foreground="{StaticResource Amber}" />
+                                </Border>
+                            </StackPanel>
                             <TextBlock Text="{Binding Subtitle}" FontSize="11.5"
                                        Foreground="{StaticResource TextDim}" Margin="0,2,0,0" />
                             <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{StaticResource TextDim}"
@@ -222,7 +229,11 @@
 
                     <!-- step 3, the mods themselves -->
                     <Grid Margin="0,10,0,10">
-                        <StackPanel Orientation="Horizontal">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Orientation="Horizontal">
                             <Border x:Name="ModsBadge" Width="24" Height="24" CornerRadius="12"
                                     Background="{StaticResource Hover}" BorderBrush="{StaticResource Stroke}"
                                     BorderThickness="1" VerticalAlignment="Center" Margin="0,0,13,0">
@@ -232,6 +243,11 @@
                             </Border>
                             <TextBlock Text="Install mods" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
                         </StackPanel>
+                        <CheckBox x:Name="BetaUpdatesToggle" Grid.Column="1" Style="{StaticResource ToggleSwitch}"
+                                  VerticalAlignment="Center" Click="BetaUpdates_Click">
+                            <TextBlock Text="Beta updates (Unstable)" FontSize="11.5"
+                                       Foreground="{StaticResource TextDim}" />
+                        </CheckBox>
                     </Grid>
 
                     <StackPanel x:Name="ModsSection">
@@ -324,8 +340,11 @@
                         </Grid.ColumnDefinitions>
                         <Control Grid.Column="0" Style="{StaticResource Spinner}" VerticalAlignment="Center"
                                  Margin="0,0,15,0" />
-                        <TextBlock x:Name="LaunchTitle" Grid.Column="1" FontSize="14.5" FontWeight="SemiBold"
-                                   VerticalAlignment="Center" TextWrapping="Wrap" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock x:Name="LaunchTitle" FontSize="14.5" FontWeight="SemiBold" TextWrapping="Wrap" />
+                            <TextBlock x:Name="LaunchDescription" FontSize="12" Foreground="{StaticResource TextDim}"
+                                       TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed" />
+                        </StackPanel>
                     </Grid>
 
                     <Border x:Name="GenPanel" Style="{StaticResource InfoPanel}" Margin="0,16,0,0" Padding="14,12"

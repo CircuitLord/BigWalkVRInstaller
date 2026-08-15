@@ -15,7 +15,7 @@
     <Color x:Key="AccentColor">#4FA3E3</Color>
     <Color x:Key="AccentHoverColor">#66B4EE</Color>
     <Color x:Key="GreenColor">#5FC98B</Color>
-    <!-- amber only ever means a pending update -->
+    <!-- amber marks updates and unstable builds -->
     <Color x:Key="AmberColor">#E9A94A</Color>
     <Color x:Key="AmberHoverColor">#F4BA63</Color>
     <Color x:Key="RedColor">#E06C75</Color>
@@ -345,6 +345,46 @@
                             </MultiTrigger.Conditions>
                             <Setter Property="Foreground" Value="{StaticResource Text}" />
                         </MultiTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- compact settings toggle -->
+    <Style x:Key="ToggleSwitch" TargetType="CheckBox">
+        <Setter Property="Foreground" Value="{StaticResource Text}" />
+        <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border x:Name="track" Width="32" Height="18" CornerRadius="9"
+                                Background="{StaticResource Hover}" BorderBrush="{StaticResource Stroke}"
+                                BorderThickness="1" VerticalAlignment="Center">
+                            <Ellipse x:Name="thumb" Width="12" Height="12" Fill="{StaticResource TextDim}"
+                                     HorizontalAlignment="Left" Margin="2" />
+                        </Border>
+                        <ContentPresenter Grid.Column="1" Margin="9,0,0,0" VerticalAlignment="Center" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="track" Property="Background" Value="{StaticResource AmberFill}" />
+                            <Setter TargetName="track" Property="BorderBrush" Value="{StaticResource Amber}" />
+                            <Setter TargetName="thumb" Property="Fill" Value="{StaticResource Amber}" />
+                            <Setter TargetName="thumb" Property="HorizontalAlignment" Value="Right" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="track" Property="BorderBrush" Value="{StaticResource TextDim}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.4" />
+                        </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

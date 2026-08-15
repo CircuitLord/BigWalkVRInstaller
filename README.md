@@ -47,6 +47,18 @@ A mod package is a zip that mirrors the Big Walk folder, so installing is extrac
 - `core`: the headline mod. Everything else lists under Optional add-ons.
 - `preserve`: files left alone if they already exist, so your calibration and configs survive updates.
 - `tokenize`: files where `{{GAMEDIR}}` and `{{GAMEDIR_JSON}}` are replaced with your game folder on install, used for the SteamVR app manifest.
+- `beta`: an optional unstable release selected when the user enables Beta updates. The mod's top-level release fields stay stable, while `beta` has its own `version`, `url`, `sha256`, and `size`.
+
+```json
+"beta": {
+  "version": "1.1.0-beta.1",
+  "url": "https://example.com/BigWalkVR-1.1.0-beta.1.zip",
+  "sha256": "...",
+  "size": 20214466
+}
+```
+
+Mods without a `beta` entry continue to use their stable release when Beta updates are enabled.
 
 Every install records the exact list of files it wrote to `<game>\UserData\BigWalkVRInstaller\<id>.json`, including runtime payload destinations deployed by the preloader. Updates delete files the previous version shipped that the new one no longer does, and uninstall removes exactly what was recorded, nothing else.
 

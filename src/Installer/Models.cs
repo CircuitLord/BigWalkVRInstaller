@@ -47,12 +47,40 @@ namespace BigWalkVRInstaller
         public string url;
         public string sha256;
         public long size;
+        public ModRelease beta;
         // the headline mod, everything else lists as an optional add-on
         public bool core;
         // files kept if they already exist, user calibration and configs
         public List<string> preserve = new List<string>();
         // files with {{GAMEDIR}} / {{GAMEDIR_JSON}} placeholders filled in on install
         public List<string> tokenize = new List<string>();
+
+        public ManifestMod SelectRelease(bool betaUpdates)
+        {
+            if (!betaUpdates || beta == null) return this;
+            return new ManifestMod
+            {
+                id = id,
+                name = name,
+                author = author,
+                version = beta.version,
+                description = description,
+                url = beta.url,
+                sha256 = beta.sha256,
+                size = beta.size,
+                core = core,
+                preserve = preserve,
+                tokenize = tokenize
+            };
+        }
+    }
+
+    public class ModRelease
+    {
+        public string version;
+        public string url;
+        public string sha256;
+        public long size;
     }
 
     // written into the game folder so installs are tracked per game install
@@ -61,6 +89,7 @@ namespace BigWalkVRInstaller
         public string id;
         public string version;
         public string runtime;
+        public bool beta;
         public List<string> files = new List<string>();
     }
 
@@ -73,11 +102,20 @@ namespace BigWalkVRInstaller
         public string Description => Remote.description;
         public bool HasDescription => !string.IsNullOrEmpty(Remote.description);
 
+        public bool IsBeta { get; set; }
+
         string _installedVersion;
         public string InstalledVersion
         {
             get => _installedVersion;
             set { Set(ref _installedVersion, value); NotifyState(); }
+        }
+
+        bool _installedBeta;
+        public bool InstalledBeta
+        {
+            get => _installedBeta;
+            set { Set(ref _installedBeta, value); NotifyState(); }
         }
 
         bool _busy;
@@ -90,7 +128,8 @@ namespace BigWalkVRInstaller
         public string BusyText { get => _busyText; set => Set(ref _busyText, value); }
 
         public bool IsInstalled => InstalledVersion != null;
-        public bool CanUpdate => IsInstalled && VersionUtil.IsNewer(Remote.version, InstalledVersion);
+        public bool ChannelMismatch => IsInstalled && InstalledBeta != IsBeta;
+        public bool CanUpdate => IsInstalled && (ChannelMismatch || VersionUtil.IsNewer(Remote.version, InstalledVersion));
         public bool IsCurrent => IsInstalled && !CanUpdate;
 
         public bool ShowInstall => !Busy && !IsInstalled;
@@ -112,20 +151,33 @@ namespace BigWalkVRInstaller
         static string FormatSize(long bytes) =>
             bytes >= 1024 * 1024 ? $"{bytes / 1024d / 1024d:0.#} MB" : $"{Math.Max(1, bytes / 1024)} KB";
 
-        public string InstallLabel => $"Install v{Remote.version}";
-        public string UpdateLabel => $"Update to v{Remote.version}";
+        public string InstallLabel => IsBeta ? $"Install beta v{Remote.version}" : $"Install v{Remote.version}";
+        public string UpdateLabel => ChannelMismatch
+            ? $"Switch to {(IsBeta ? "beta" : "stable")} v{Remote.version}"
+            : $"Update to v{Remote.version}";
 
         void NotifyState()
         {
-            foreach (var name in new[] { nameof(IsInstalled), nameof(CanUpdate), nameof(IsCurrent), nameof(ShowInstall),
-                nameof(ShowUpdate), nameof(ShowCurrent), nameof(ShowUninstall), nameof(Subtitle) })
+            foreach (var name in new[] { nameof(IsInstalled), nameof(ChannelMismatch), nameof(CanUpdate), nameof(IsCurrent),
+                nameof(ShowInstall), nameof(ShowUpdate), nameof(ShowCurrent), nameof(ShowUninstall), nameof(Subtitle),
+                nameof(UpdateLabel) })
                 Notify(name);
         }
     }
 
     public static class VersionUtil
     {
-        public static bool IsNewer(string remote, string local) => Parse(remote) > Parse(local);
+        public static bool IsNewer(string remote, string local)
+        {
+            var coreComparison = Parse(remote).CompareTo(Parse(local));
+            if (coreComparison != 0) return coreComparison > 0;
+
+            var remotePre = Prerelease(remote);
+            var localPre = Prerelease(local);
+            if (remotePre == null) return localPre != null;
+            if (localPre == null) return false;
+            return ComparePrerelease(remotePre, localPre) > 0;
+        }
 
         static Version Parse(string s)
         {
@@ -135,6 +187,31 @@ namespace BigWalkVRInstaller
             if (!core.Contains(".")) core += ".0";
             if (!Version.TryParse(core, out var v)) return new Version(0, 0, 0, 0);
             return new Version(v.Major, v.Minor, Math.Max(v.Build, 0), Math.Max(v.Revision, 0));
+        }
+
+        static string Prerelease(string version)
+        {
+            if (string.IsNullOrWhiteSpace(version)) return null;
+            var dash = version.IndexOf('-');
+            if (dash < 0) return null;
+            var end = version.IndexOf('+', dash);
+            return version.Substring(dash + 1, (end < 0 ? version.Length : end) - dash - 1);
+        }
+
+        static int ComparePrerelease(string remote, string local)
+        {
+            var remoteParts = remote.Split('.');
+            var localParts = local.Split('.');
+            for (var i = 0; i < Math.Min(remoteParts.Length, localParts.Length); i++)
+            {
+                if (remoteParts[i] == localParts[i]) continue;
+                var remoteNumber = int.TryParse(remoteParts[i], out var r);
+                var localNumber = int.TryParse(localParts[i], out var l);
+                if (remoteNumber && localNumber) return r.CompareTo(l);
+                if (remoteNumber != localNumber) return remoteNumber ? -1 : 1;
+                return string.Compare(remoteParts[i], localParts[i], StringComparison.OrdinalIgnoreCase);
+            }
+            return remoteParts.Length.CompareTo(localParts.Length);
         }
     }
 }

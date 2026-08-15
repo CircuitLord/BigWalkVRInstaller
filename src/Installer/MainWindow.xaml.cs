@@ -48,6 +48,7 @@ namespace BigWalkVRInstaller
         async void Window_Loaded(object sender, RoutedEventArgs e)
         {
             _settings = AppSettings.Load();
+            BetaUpdatesToggle.IsChecked = _settings.EnableBetaUpdates;
             if (AppSettings.LoadError != null)
                 Status($"Settings load failed, using defaults: {AppSettings.LoadError}", true);
 
@@ -104,9 +105,13 @@ namespace BigWalkVRInstaller
             try
             {
                 var manifest = await RepoClient.FetchManifest(AppSettings.ManifestUrl);
-                foreach (var remote in manifest.mods)
+                foreach (var available in manifest.mods)
                 {
-                    var entry = previous.TryGetValue(remote.id, out var live) && live.Busy ? live : new ModEntry { Remote = remote };
+                    var useBeta = _settings.EnableBetaUpdates && available.beta != null;
+                    var remote = available.SelectRelease(_settings.EnableBetaUpdates);
+                    var entry = previous.TryGetValue(remote.id, out var live) && live.Busy
+                        ? live
+                        : new ModEntry { Remote = remote, IsBeta = useBeta };
                     (remote.core ? _core : _optional).Add(entry);
                 }
                 _bepInExSource = manifest.bepinex;
@@ -124,7 +129,8 @@ namespace BigWalkVRInstaller
                 {
                     _optional.Add(new ModEntry
                     {
-                        Remote = new ManifestMod { id = record.id, version = record.version }
+                        Remote = new ManifestMod { id = record.id, version = record.version },
+                        IsBeta = record.beta
                     });
                 }
             }
@@ -139,7 +145,11 @@ namespace BigWalkVRInstaller
         void RefreshLocalState()
         {
             foreach (var mod in AllMods)
-                mod.InstalledVersion = HasGame ? PackageInstaller.ReadRecord(_settings.GamePath, mod.Id)?.version : null;
+            {
+                var record = HasGame ? PackageInstaller.ReadRecord(_settings.GamePath, mod.Id) : null;
+                mod.InstalledBeta = record?.beta ?? false;
+                mod.InstalledVersion = record?.version;
+            }
             UpdateSetupState();
         }
 
@@ -222,7 +232,7 @@ namespace BigWalkVRInstaller
 
                 mod.BusyText = "Installing...";
                 mod.Progress = 1;
-                await Task.Run(() => PackageInstaller.Install(_settings.GamePath, mod.Remote, bytes));
+                await Task.Run(() => PackageInstaller.Install(_settings.GamePath, mod.Remote, bytes, mod.IsBeta));
                 Status($"{mod.Name} v{mod.Remote.version} installed");
             }
             catch (Exception ex)
@@ -345,18 +355,19 @@ namespace BigWalkVRInstaller
         // ---- shell actions ----
 
         void LaunchNonVr_Click(object sender, RoutedEventArgs e) => Launch(
-            () => GameLauncher.LaunchNonVr(_settings.GamePath), "Launching Big Walk in Non-VR mode");
+            () => GameLauncher.LaunchNonVr(_settings.GamePath), "Launching Big Walk in Non-VR mode", "");
 
         void Launch_Click(object sender, RoutedEventArgs e) => Launch(
-            () => GameLauncher.LaunchVr(_settings.GamePath), "Launching Big Walk in VR");
+            () => GameLauncher.LaunchVr(_settings.GamePath), "Launching Big Walk in VR",
+            "Make sure SteamVR is running and your headset is connected.");
 
-        void Launch(Action launch, string title)
+        void Launch(Action launch, string title, string description)
         {
             try
             {
                 launch();
                 Status(title);
-                ShowLaunchModal(title + "...");
+                ShowLaunchModal(title + "...", description);
             }
             catch (Exception ex)
             {
@@ -366,10 +377,12 @@ namespace BigWalkVRInstaller
 
         // ---- launch modal ----
 
-        void ShowLaunchModal(string title)
+        void ShowLaunchModal(string title, string description)
         {
             StopWatcher();
             LaunchTitle.Text = title;
+            LaunchDescription.Text = description;
+            LaunchDescription.Visibility = string.IsNullOrEmpty(description) ? Visibility.Collapsed : Visibility.Visible;
             GenPanel.Visibility = Visibility.Collapsed;
             LaunchOverlay.Visibility = Visibility.Visible;
 
@@ -400,6 +413,7 @@ namespace BigWalkVRInstaller
                 // the modal stays up for the whole session, it is the only way to stop the game again
                 case LaunchPhase.Ready:
                     LaunchTitle.Text = "Big Walk is running";
+                    LaunchDescription.Visibility = Visibility.Collapsed;
                     Status("Big Walk is running");
                     break;
 
@@ -438,6 +452,14 @@ namespace BigWalkVRInstaller
         async void Refresh_Click(object sender, RoutedEventArgs e)
         {
             Status("Refreshing...");
+            await Refresh();
+        }
+
+        async void BetaUpdates_Click(object sender, RoutedEventArgs e)
+        {
+            _settings.EnableBetaUpdates = BetaUpdatesToggle.IsChecked == true;
+            _settings.Save();
+            Status(_settings.EnableBetaUpdates ? "Beta updates enabled. Beta builds are unstable." : "Stable updates enabled");
             await Refresh();
         }
 
