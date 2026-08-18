@@ -28,7 +28,13 @@
                                   ],
                      "tokenize":  [
 
-                                  ]
+                                  ],
+                     "beta":  {
+                                  "version":  "1.0.13",
+                                  "url":  "https://github.com/CircuitLord/BigWalkVRInstaller/releases/download/mod-packages/BigWalkVR-beta-1.0.13.zip",
+                                  "sha256":  "32b2466fc89f0b4be16a8fff5013e2f5194cd221b2fbaf332c2ffffe345f68f6",
+                                  "size":  20215346
+                              }
                  }
              ]
 }
