@@ -30,10 +30,10 @@
 
                                   ],
                      "beta":  {
-                                  "version":  "1.0.13",
-                                  "url":  "https://github.com/CircuitLord/BigWalkVRInstaller/releases/download/mod-packages/BigWalkVR-beta-1.0.13.zip",
-                                  "sha256":  "32b2466fc89f0b4be16a8fff5013e2f5194cd221b2fbaf332c2ffffe345f68f6",
-                                  "size":  20215346
+                                  "version":  "1.0.14",
+                                  "url":  "https://github.com/CircuitLord/BigWalkVRInstaller/releases/download/mod-packages/BigWalkVR-1.0.14.zip",
+                                  "sha256":  "f23fa518da48801871a7d681716442d80ce1fb6b3963a302f46afbb41dc0cb27",
+                                  "size":  20215594
                               }
                  }
              ]
