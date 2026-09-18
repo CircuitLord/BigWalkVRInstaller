@@ -40,15 +40,15 @@
     "name": "Titanfall 2 VR",
     "author": "CircuitLord",
     "description": "OpenXR campaign VR support for Titanfall 2.",
-    "version": "0.1.1",
-    "url": "https://github.com/CircuitLord/BigWalkVRInstaller/releases/download/mod-packages/Titanfall2VR-0.1.1.zip",
-    "sha256": "cc33b2450ba88cb36da37aad3f1dea61d4660370af62219a154a8387a1905f55",
-    "size": 2093525,
+    "version": "0.1.2",
+    "url": "https://github.com/CircuitLord/BigWalkVRInstaller/releases/download/mod-packages/Titanfall2VR-0.1.2.zip",
+    "sha256": "cc73fb85851148dd5f5c90ab26bd8963cb28354eee3f32e79c0a678536751cf4",
+    "size": 2821030,
     "beta": {
-      "version": "0.1.1",
-      "url": "https://github.com/CircuitLord/BigWalkVRInstaller/releases/download/mod-packages/Titanfall2VR-0.1.1.zip",
-      "sha256": "cc33b2450ba88cb36da37aad3f1dea61d4660370af62219a154a8387a1905f55",
-      "size": 2093525
+      "version": "0.1.2",
+      "url": "https://github.com/CircuitLord/BigWalkVRInstaller/releases/download/mod-packages/Titanfall2VR-0.1.2.zip",
+      "sha256": "cc73fb85851148dd5f5c90ab26bd8963cb28354eee3f32e79c0a678536751cf4",
+      "size": 2821030
     }
   }
 }
