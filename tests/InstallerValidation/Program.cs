@@ -35,10 +35,23 @@ namespace InstallerValidation
                 Assert(File.ReadAllText(Path.Combine(root, "TF2VR", "Northstar.dll")) == "vr-profile", "VR profile missing");
                 Assert(File.ReadAllText(Path.Combine(root, "TF2VR", "plugins", "Titanfall2VR.dll")) == "vr-plugin-v1", "VR plugin missing");
 
-                var launch = Titanfall2Installer.CreateLaunchInfo(root);
+                Assert(installer.IsInstalled, "complete VR package was not recognized");
+                Assert(File.ReadAllText(Path.Combine(root, "TF2VR", "tools", "xr_probe.exe")) == "probe", "resolution probe missing");
+                Assert(File.Exists(Path.Combine(root, "TF2VR", "mods", "Titanfall2VR.Cockpit", "mod.json")), "cockpit assets missing");
+                var launch = Titanfall2Installer.CreateLaunchInfo(root, new[] {
+                    new OpenXrView { width = 2100, height = 2200 }, new OpenXrView { width = 2000, height = 2160 }
+                });
                 Assert(launch.FileName == Path.Combine(root, "Titanfall2VRLauncher.exe"), "wrong launcher path");
-                Assert(launch.Arguments == "-profile=TF2VR", "wrong profile argument");
+                Assert(launch.Arguments == "-profile=TF2VR -windowed -w 3912 -h 2200 +sound_without_focus 1 +mat_vsync_mode 0", "wrong VR launch arguments");
+                Assert(launch.EnvironmentVariables["TF2VR_OPENXR"] == "1", "OpenXR was not enabled");
+                Assert(!launch.EnvironmentVariables.ContainsKey("TF2VR_DEV_SESSION"), "development session inherited");
+                Assert(!launch.EnvironmentVariables.ContainsKey("XR_RUNTIME_JSON"), "runtime override inherited");
+                Assert(!launch.UseShellExecute, "VR environment cannot reach launcher");
                 Assert(launch.WorkingDirectory == root, "wrong working directory");
+                var wide = Titanfall2Installer.CreateLaunchInfo(root, new[] {
+                    new OpenXrView { width = 4000, height = 1000 }, new OpenXrView { width = 4100, height = 900 }
+                });
+                Assert(wide.Arguments.Contains("-w 4100 -h 1000"), "wide eye resolution was cropped");
 
                 var userFile = Path.Combine(root, "TF2VR", "save_data", "user.json");
                 Directory.CreateDirectory(Path.GetDirectoryName(userFile));
@@ -68,6 +81,8 @@ namespace InstallerValidation
                 installer.Uninstall();
                 Assert(!File.Exists(Path.Combine(root, "Titanfall2VRLauncher.exe")), "renamed launcher survived uninstall");
                 Assert(!File.Exists(Path.Combine(root, "TF2VR", "Northstar.dll")), "VR profile survived uninstall");
+                Assert(!File.Exists(Path.Combine(root, "TF2VR", "tools", "xr_probe.exe")), "probe survived uninstall");
+                Assert(!File.Exists(Path.Combine(root, "TF2VR", "mods", "Titanfall2VR.Cockpit", "mod.json")), "cockpit survived uninstall");
                 Assert(File.ReadAllText(userFile) == "user-data", "user file changed during uninstall");
                 Assert(File.ReadAllText(Path.Combine(root, "NorthstarLauncher.exe")) == "standard-launcher", "standard launcher changed after uninstall");
                 Assert(File.ReadAllText(Path.Combine(root, "R2Northstar", "Northstar.dll")) == "standard-profile", "standard profile changed after uninstall");
@@ -105,7 +120,15 @@ namespace InstallerValidation
             using (var stream = new MemoryStream())
             {
                 using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, true))
+                {
                     Add(archive, "Titanfall2VR.dll", plugin);
+                    Add(archive, "xr_probe.exe", "probe");
+                    Add(archive, "launch.json", JsonUtil.Serialize(new TitanfallLaunchSettings {
+                        arguments = new[] { "-profile={profile}", "-windowed", "-w", "{width}", "-h", "{height}", "+sound_without_focus", "{sound}" },
+                        vrArguments = new[] { "+mat_vsync_mode", "0" }
+                    }));
+                    Add(archive, "mods/Titanfall2VR.Cockpit/mod.json", "{}");
+                }
                 return stream.ToArray();
             }
         }

@@ -539,18 +539,24 @@ namespace BigWalkVRInstaller
         void LaunchNonVr_Click(object sender, RoutedEventArgs e) => Launch(
             () => _bigWalk.PlayNonVr(), "Launching Big Walk in Non-VR mode", "");
 
-        void Launch_Click(object sender, RoutedEventArgs e)
+        async void Launch_Click(object sender, RoutedEventArgs e)
         {
             if (_selectedGame == SelectedGame.Titanfall2)
             {
+                LaunchButton.IsEnabled = false;
                 try
                 {
-                    _titanfall.Play();
+                    Status("Checking headset resolution...");
+                    await Task.Run(() => _titanfall.Play());
                     Status("Launching Titanfall 2 VR");
                 }
                 catch (Exception ex)
                 {
                     Status($"Launch failed: {ex.Message}", true);
+                }
+                finally
+                {
+                    LaunchButton.IsEnabled = true;
                 }
                 return;
             }

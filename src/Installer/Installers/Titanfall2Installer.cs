@@ -8,6 +8,18 @@ using BigWalkVRInstaller.Services;
 
 namespace BigWalkVRInstaller.Installers
 {
+    public sealed class TitanfallLaunchSettings
+    {
+        public string[] arguments;
+        public string[] vrArguments;
+    }
+
+    public sealed class OpenXrView
+    {
+        public int width;
+        public int height;
+    }
+
     public sealed class Titanfall2Installer : IVrModInstaller
     {
         public const string InstallerId = "Titanfall2VR";
@@ -33,7 +45,9 @@ namespace BigWalkVRInstaller.Installers
         public bool IsInstalled => Record != null
             && File.Exists(Path.Combine(GamePath, LauncherName))
             && File.Exists(Path.Combine(GamePath, ProfileName, "Northstar.dll"))
-            && File.Exists(Path.Combine(GamePath, ProfileName, "plugins", "Titanfall2VR.dll"));
+            && File.Exists(Path.Combine(GamePath, ProfileName, "plugins", "Titanfall2VR.dll"))
+            && File.Exists(Path.Combine(GamePath, ProfileName, "tools", "xr_probe.exe"))
+            && File.Exists(Path.Combine(GamePath, ProfileName, "tools", "launch.json"));
         public string InstalledVersion => IsInstalled ? Record.version : null;
 
         public static ReleaseInfo PinnedNorthstar => new ReleaseInfo
@@ -84,9 +98,12 @@ namespace BigWalkVRInstaller.Installers
                 if (!profileEntries.Any(entry => entry.FullName == "R2Northstar/Northstar.dll"))
                     throw new Exception("Northstar package is missing R2Northstar/Northstar.dll");
 
-                var plugin = modArchive.Entries.SingleOrDefault(entry =>
-                    string.Equals(entry.Name, "Titanfall2VR.dll", StringComparison.OrdinalIgnoreCase));
-                if (plugin == null) throw new Exception("Titanfall 2 VR package is missing Titanfall2VR.dll");
+                var plugin = modArchive.GetEntry("Titanfall2VR.dll")
+                    ?? throw new Exception("Titanfall 2 VR package is missing Titanfall2VR.dll");
+                var probe = modArchive.GetEntry("xr_probe.exe")
+                    ?? throw new Exception("Titanfall 2 VR package is missing xr_probe.exe");
+                var launch = modArchive.GetEntry("launch.json")
+                    ?? throw new Exception("Titanfall 2 VR package is missing launch.json");
 
                 Extract(launcher, LauncherName, written);
                 foreach (var entry in profileEntries)
@@ -95,6 +112,10 @@ namespace BigWalkVRInstaller.Installers
                     Extract(entry, relative, written);
                 }
                 Extract(plugin, ProfileName + "/plugins/Titanfall2VR.dll", written);
+                Extract(probe, ProfileName + "/tools/xr_probe.exe", written);
+                Extract(launch, ProfileName + "/tools/launch.json", written);
+                foreach (var entry in modArchive.Entries.Where(entry => entry.Name.Length > 0 && entry.FullName.StartsWith("mods/", StringComparison.Ordinal)))
+                    Extract(entry, ProfileName + "/" + entry.FullName, written);
             }
 
             if (previous?.files != null) InstallerFileSystem.RemoveStaleFiles(GamePath, previous.files, written);
@@ -120,15 +141,54 @@ namespace BigWalkVRInstaller.Installers
 
         public void Uninstall() => OwnedFileStore.Remove(GamePath, InstallerId);
 
-        public static ProcessStartInfo CreateLaunchInfo(string gamePath) => new ProcessStartInfo
+        static ProcessStartInfo VrProcess(string gamePath, string executable)
         {
-            FileName = Path.Combine(gamePath, LauncherName),
-            Arguments = "-profile=" + ProfileName,
-            WorkingDirectory = gamePath,
-            UseShellExecute = false
-        };
+            var info = new ProcessStartInfo
+            {
+                FileName = executable,
+                WorkingDirectory = gamePath,
+                UseShellExecute = false
+            };
+            foreach (var key in info.EnvironmentVariables.Keys.Cast<string>().ToArray())
+                if (key.StartsWith("TF2VR_", StringComparison.OrdinalIgnoreCase) || new[] { "VR_PATHREG_OVERRIDE", "VR_CONFIG_PATH", "VR_LOG_PATH", "XR_RUNTIME_JSON" }.Contains(key))
+                    info.EnvironmentVariables.Remove(key);
+            info.EnvironmentVariables["TF2VR_OPENXR"] = "1";
+            return info;
+        }
 
-        public void Play() => Process.Start(CreateLaunchInfo(GamePath));
+        public static ProcessStartInfo CreateLaunchInfo(string gamePath, OpenXrView[] views)
+        {
+            if (views.Length != 2 || views.Any(view => view.width <= 0 || view.height <= 0))
+                throw new Exception("OpenXR must provide two valid eye resolutions");
+            var height = views.Max(view => view.height);
+            var width = Math.Max(views.Max(view => view.width), (height * 16 + 8) / 9);
+            var settings = JsonUtil.Deserialize<TitanfallLaunchSettings>(File.ReadAllText(Path.Combine(gamePath, ProfileName, "tools", "launch.json")));
+            var info = VrProcess(gamePath, Path.Combine(gamePath, LauncherName));
+            info.Arguments = string.Join(" ", settings.arguments.Select(arg => arg.Replace("{profile}", ProfileName)
+                .Replace("{width}", width.ToString()).Replace("{height}", height.ToString()).Replace("{sound}", "1"))
+                .Concat(settings.vrArguments));
+            return info;
+        }
+
+        public void Play()
+        {
+            var tools = Path.Combine(GamePath, ProfileName, "tools");
+            var viewsPath = Path.Combine(tools, "xr_views.json");
+            var info = VrProcess(GamePath, Path.Combine(tools, "xr_probe.exe"));
+            info.Arguments = "--views \"" + viewsPath + "\"";
+            info.CreateNoWindow = true;
+            using (var probe = Process.Start(info))
+            {
+                if (!probe.WaitForExit(15000))
+                {
+                    probe.Kill();
+                    throw new Exception("OpenXR probe timed out. Check your VR runtime and headset.");
+                }
+                if (probe.ExitCode != 0) throw new Exception("OpenXR probe failed. Check your VR runtime and headset.");
+            }
+            var views = JsonUtil.Deserialize<OpenXrView[]>(File.ReadAllText(viewsPath));
+            Process.Start(CreateLaunchInfo(GamePath, views));
+        }
 
         public static bool IsRunning() =>
             Process.GetProcessesByName("Titanfall2").Any() || Process.GetProcessesByName("Titanfall2VRLauncher").Any();
