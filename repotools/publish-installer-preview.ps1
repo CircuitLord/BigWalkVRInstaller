@@ -23,6 +23,5 @@ if ($NoPush) {
     return
 }
 
-Publish-ReleaseAsset -Path $exe -Tag $tag -Title "CircuitLord's VR Mods Installer v$version" -Notes "Preview release of CircuitLord's multi-game VR mod installer." -Replace
-Invoke-Gh @("release", "edit", $tag, "--repo", $RepoSlug, "--prerelease", "--latest=false")
+Publish-ReleaseAsset -Path $exe -Tag $tag -Title "CircuitLord's VR Mods Installer v$version" -Notes "Preview release of CircuitLord's multi-game VR mod installer." -Replace -Prerelease
 Write-Host "published installer: $url"

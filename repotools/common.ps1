@@ -44,7 +44,7 @@ function Release-AssetUrl([string]$Tag, [string]$FileName) {
     return "https://github.com/$PublicSlug/releases/download/$Tag/$FileName"
 }
 
-function Publish-ReleaseAsset([string]$Path, [string]$Tag, [string]$Title, [string]$Notes, [switch]$Replace) {
+function Publish-ReleaseAsset([string]$Path, [string]$Tag, [string]$Title, [string]$Notes, [switch]$Replace, [switch]$Prerelease) {
     if (!(Get-Command gh -ErrorAction SilentlyContinue)) { throw "gh CLI not found" }
     $exists = (Invoke-Native gh @("release", "view", $Tag, "--repo", $PublicSlug) -Quiet) -eq 0
     if ($exists) {
@@ -53,7 +53,9 @@ function Publish-ReleaseAsset([string]$Path, [string]$Tag, [string]$Title, [stri
         if ((Invoke-Native gh $arguments) -ne 0) { throw "release upload failed" }
         return
     }
-    if ((Invoke-Native gh @("release", "create", $Tag, $Path, "--repo", $PublicSlug, "--title", $Title, "--notes", $Notes, "--latest=false")) -ne 0) {
+    $arguments = @("release", "create", $Tag, $Path, "--repo", $PublicSlug, "--title", $Title, "--notes", $Notes, "--latest=false")
+    if ($Prerelease) { $arguments += "--prerelease" }
+    if ((Invoke-Native gh $arguments) -ne 0) {
         throw "release creation failed"
     }
 }
