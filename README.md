@@ -1,56 +1,71 @@
-<h1 align="center">CircuitLord's VR Mods Installer</h1>
+<p align="center">
+  <img src="bigwalkvr_icon.png" alt="Big Walk VR" width="160">
+</p>
 
-Install and manage CircuitLord's VR mods from one app.
+<h1 align="center">Big Walk VR Installer</h1>
 
-## Supported mods
+### Join the [Discord](https://discord.gg/MTKwud2cCP) if you have questions or feedback!
 
-### Big Walk VR
+Big Walk VR adds full multiplayer-compatible SteamVR support to the game Big Walk by House House. It includes stereo rendering support, full 6dof motion controls with support for grabbing and throwing objects, and more!
 
-- Locates Big Walk through Steam
-- Installs BepInEx and Big Walk VR
-- Preserves stable and beta updates, optional add-ons, non-VR launch, crash reports, and restore-to-vanilla
+This is a utility to automatically install the VR mod and associated files, and keep them up-to-date.
 
-### Titanfall 2 VR
+Big Walk VR and this installer are community projects, not affiliated with or endorsed by House House. Use at your own risk.
 
-- Locates Steam and EA installations
-- Downloads pinned Northstar v1.31.13 and verifies SHA-256
-- Installs Northstar into `<Titanfall2>\TF2VR`
-- Installs `Titanfall2VRLauncher.exe` and `TF2VR\plugins\Titanfall2VR.dll`
-- Launches `Titanfall2VRLauncher.exe -profile=TF2VR` from the Titanfall 2 directory
-- Leaves `NorthstarLauncher.exe` and `R2Northstar` untouched
-- Tracks owned files for stable and beta updates and uninstall
-- Packages the latest Northstar log, minidump, and focused VR diagnostics for crash reports
+**[Download BigWalkVRInstaller](https://github.com/CircuitLord/BigWalkVRInstaller/releases/latest/download/BigWalkVRInstaller.exe)**
 
-Join the [Discord](https://discord.gg/MTKwud2cCP) for support and feedback.
 
-## Building
+## Do other players need the mod?
+The **host and other players** need the mod installed to **see your VR hands**.
 
-Requires the .NET Framework 4.8 SDK.
+Your non-vr friends can install the mod and still play in flatscreen!
 
-```text
-dotnet build BigWalkVRInstaller.sln -c Release
+## What it does
+
+1. **Finds Big Walk** through your Steam install.
+2. **Sets up BepInEx**, the mod loader Big Walk VR depends on.
+3. **Installs the mod**, plus any optional add-ons.
+
+Launching Big Walk normally through Steam stays non-VR while showing VR players' tracked movement. To play in VR, start SteamVR and use the installer's Launch in VR button.
+
+## Building from source
+
+Needs the .NET Framework 4.8 SDK.
+
+```
+dotnet build src/Installer -c Release
 ```
 
-The installer is written to `src/Installer/bin/Release/net48/CircuitLordsVRModsInstaller.exe`.
+Output is a single `src/Installer/bin/Release/net48/BigWalkVRInstaller.exe` using only .NET Framework assemblies.
 
-Run the install isolation validation with:
+## How it works
 
-```text
-tests/InstallerValidation/bin/Release/net48/InstallerValidation.exe
+`manifest-v2.json` lists the installer version, BepInEx build, and available BepInEx mods with their download URLs and SHA-256 hashes. The app requires schema version 2, compares it against what is installed, and shows Install or Update accordingly. The legacy `manifest.json` exists only to provide an upgrade path from the old MelonLoader version to the new installer with manifest-v2.
+
+A mod package is a zip that mirrors the Big Walk folder, so installing is extract-in-place. Thunderstore metadata at the archive root is ignored. Each entry can declare:
+
+- `core`: the headline mod. Everything else lists under Optional add-ons.
+- `preserve`: files left alone if they already exist, so your calibration and configs survive updates.
+- `tokenize`: files where `{{GAMEDIR}}` and `{{GAMEDIR_JSON}}` are replaced with your game folder on install, used for the SteamVR app manifest.
+- `beta`: an optional unstable release selected when the user enables Beta updates. The mod's top-level release fields stay stable, while `beta` has its own `version`, `url`, `sha256`, and `size`.
+
+```json
+"beta": {
+  "version": "1.1.0-beta.1",
+  "url": "https://example.com/BigWalkVR-1.1.0-beta.1.zip",
+  "sha256": "...",
+  "size": 20214466
+}
 ```
 
-## Packages
+Mods without a `beta` entry continue to use their stable release when Beta updates are enabled.
 
-`manifest-v2.json` pins download URLs and SHA-256 hashes. Big Walk packages mirror its game directory. The Titanfall package contains `Titanfall2VR.dll`; its installer class handles the Northstar profile layout.
-
-Big Walk install records remain in `<game>\UserData\BigWalkVRInstaller`. Titanfall records are stored in `<game>\.circuitlord-vr-mods`.
-
-The shared `repotools/publish-package.ps1` publishes immutable stable or beta assets to the `mod-packages` release. Use `repotools/publish-installer-preview.ps1 -NoPush` to validate the separate preview installer release locally.
+Every install records the exact list of files it wrote to `<game>\UserData\BigWalkVRInstaller\<id>.json`, including runtime payload destinations deployed by the preloader. Updates delete files the previous version shipped that the new one no longer does, and uninstall removes exactly what was recorded, nothing else.
 
 ## License
 
-MIT. See [LICENSE](LICENSE) and [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+MIT, see [LICENSE](LICENSE). Third-party software details are in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
-## Support
+## Supporting
 
-https://ko-fi.com/circuitlord
+If you've enjoyed something I've made, and want to support my work, see my ko-fi! https://ko-fi.com/circuitlord 
