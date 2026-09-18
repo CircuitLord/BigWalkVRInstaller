@@ -7,7 +7,11 @@ namespace BigWalkVRInstaller.Services
     {
         public const string ManifestUrl = "https://raw.githubusercontent.com/CircuitLord/BigWalkVRInstaller/main/manifest-v2.json";
         public string GamePath;
+        public string BigWalkPath;
+        public string Titanfall2Path;
         public bool EnableBetaUpdates;
+        public bool? BigWalkBetaUpdates;
+        public bool? Titanfall2BetaUpdates;
 
         static string Dir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "BigWalkVRInstaller");
         static string FilePath => Path.Combine(Dir, "settings.json");
@@ -19,7 +23,11 @@ namespace BigWalkVRInstaller.Services
             try
             {
                 if (File.Exists(FilePath))
-                    return JsonUtil.Deserialize<AppSettings>(File.ReadAllText(FilePath)) ?? new AppSettings();
+                {
+                    var settings = JsonUtil.Deserialize<AppSettings>(File.ReadAllText(FilePath)) ?? new AppSettings();
+                    if (string.IsNullOrEmpty(settings.BigWalkPath)) settings.BigWalkPath = settings.GamePath;
+                    return settings;
+                }
             }
             catch (Exception ex)
             {

@@ -27,6 +27,7 @@ namespace BigWalkVRInstaller
         public string name;
         public ReleaseInfo installer;
         public ReleaseInfo bepinex;
+        public ManifestMod titanfall2vr;
         public List<ManifestMod> mods = new List<ManifestMod>();
     }
 
@@ -35,6 +36,7 @@ namespace BigWalkVRInstaller
         public string version;
         public string url;
         public string sha256;
+        public long size;
     }
 
     public class ManifestMod
@@ -55,9 +57,11 @@ namespace BigWalkVRInstaller
         // files with {{GAMEDIR}} / {{GAMEDIR_JSON}} placeholders filled in on install
         public List<string> tokenize = new List<string>();
 
+        public bool HasNewerBeta => beta != null && VersionUtil.IsNewer(beta.version, version);
+
         public ManifestMod SelectRelease(bool betaUpdates)
         {
-            if (!betaUpdates || beta == null) return this;
+            if (!betaUpdates || !HasNewerBeta) return this;
             return new ManifestMod
             {
                 id = id,
@@ -89,6 +93,7 @@ namespace BigWalkVRInstaller
         public string id;
         public string version;
         public string runtime;
+        public string northstarVersion;
         public bool beta;
         public List<string> files = new List<string>();
     }

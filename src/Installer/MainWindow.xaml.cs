@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -7,7 +7,8 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Threading;
+using System.Windows.Media.Imaging;
+using BigWalkVRInstaller.Installers;
 using BigWalkVRInstaller.Services;
 
 namespace BigWalkVRInstaller
@@ -21,6 +22,8 @@ namespace BigWalkVRInstaller
 
     public partial class MainWindow : Window
     {
+        enum SelectedGame { None, BigWalk, Titanfall2 }
+
         const string RepoUrl = "https://github.com/CircuitLord/BigWalkVRInstaller";
         const string DiscordUrl = "https://discord.gg/MTKwud2cCP";
         const string SupportUrl = "https://ko-fi.com/circuitlord";
@@ -29,9 +32,17 @@ namespace BigWalkVRInstaller
         readonly ObservableCollection<ModEntry> _optional = new ObservableCollection<ModEntry>();
         readonly ObservableCollection<LogEntry> _logs = new ObservableCollection<LogEntry>();
         AppSettings _settings;
+        BigWalkInstaller _bigWalk;
+        Titanfall2Installer _titanfall;
+        SelectedGame _selectedGame;
         ReleaseInfo _selfUpdate;
         ReleaseInfo _bepInExSource;
+        ManifestMod _titanfallRelease;
+        bool _titanfallIsBeta;
+        bool _bigWalkBetaAvailable;
+        bool _titanfallBetaAvailable;
         bool _bepInExBusy;
+        bool _titanfallBusy;
         GameStartupWatcher _watcher;
 
         public MainWindow()
@@ -44,77 +55,148 @@ namespace BigWalkVRInstaller
         }
 
         IEnumerable<ModEntry> AllMods => _core.Concat(_optional);
+        bool HasGame => _bigWalk?.HasGame == true;
 
-        async void Window_Loaded(object sender, RoutedEventArgs e)
+        void Window_Loaded(object sender, RoutedEventArgs e)
         {
             _settings = AppSettings.Load();
-            BetaUpdatesToggle.IsChecked = _settings.EnableBetaUpdates;
-            if (AppSettings.LoadError != null)
-                Status($"Settings load failed, using defaults: {AppSettings.LoadError}", true);
-
-            // older settings files hold the raw registry path, fix the casing on the way in
-            var stored = GameLocator.Canonical(_settings.GamePath);
-            if (stored != _settings.GamePath)
+            _bigWalk = new BigWalkInstaller(_settings);
+            _titanfall = new Titanfall2Installer(_settings);
+            var settingsChanged = false;
+            if (!_settings.BigWalkBetaUpdates.HasValue)
             {
-                _settings.GamePath = stored;
-                _settings.Save();
+                _settings.BigWalkBetaUpdates = _settings.EnableBetaUpdates;
+                settingsChanged = true;
             }
-
-            if (!GameLocator.IsValidGamePath(_settings.GamePath))
+            if (!_settings.Titanfall2BetaUpdates.HasValue)
             {
-                _settings.GamePath = GameLocator.DetectGamePath();
-                if (_settings.GamePath != null)
-                {
-                    _settings.Save();
-                    Status($"Found Big Walk at {_settings.GamePath}");
-                }
-                else Status("Couldn't find Big Walk, press Change in step 1 to pick the folder", true);
+                _settings.Titanfall2BetaUpdates = false;
+                settingsChanged = true;
             }
+            if (settingsChanged) _settings.Save();
+            BetaUpdatesToggle.IsChecked = _settings.BigWalkBetaUpdates;
+            TitanfallBetaUpdatesToggle.IsChecked = _settings.Titanfall2BetaUpdates;
 
-            await Refresh();
-            if (HasGame && BepInExInstaller.IsMelonLoaderInstalled(_settings.GamePath))
-            {
-                Status("Remove MelonLoader in step 2 to continue.");
-                return;
-            }
-            var vr = _core.FirstOrDefault();
-            if (vr == null) return;
-            if (vr.CanUpdate) Status($"An update to v{vr.Remote.version} is available");
-            else if (vr.IsInstalled) Status("Everything is up to date");
+            if (AppSettings.LoadError != null) Status($"Settings load failed, using defaults: {AppSettings.LoadError}", true);
+
+            if (!HasGame) _bigWalk.DetectGamePath();
+            if (!_titanfall.HasGame) _titanfall.DetectGamePath();
+            UpdateGameCards();
+            Status("Choose a game to continue");
         }
 
-        bool HasGame => GameLocator.IsValidGamePath(_settings?.GamePath);
+        void UpdateGameCards()
+        {
+            SetGameCard(_bigWalk, BigWalkCardStatus, BigWalkInstalledChip, BigWalkInstalledVersion, BigWalkArt);
+            SetGameCard(_titanfall, TitanfallCardStatus, TitanfallCardInstalledChip, TitanfallInstalledVersion, TitanfallArt);
+        }
 
-        // ---- refresh ----
+        static void SetGameCard(IVrModInstaller installer, TextBlock status, Border installedChip, TextBlock version, Border art)
+        {
+            var installedVersion = installer.InstalledVersion;
+            var installed = installedVersion != null;
+            status.Text = !installer.HasGame ? "Game not found" : installed ? "Ready to play" : "Ready to install";
+            installedChip.Visibility = installed ? Visibility.Visible : Visibility.Collapsed;
+            version.Text = installed ? "v" + installedVersion : "";
+            art.Opacity = installer.HasGame ? 1 : 0.45;
+        }
+
+        async void SelectBigWalk_Click(object sender, RoutedEventArgs e) => await OpenGame(SelectedGame.BigWalk);
+        async void SelectTitanfall_Click(object sender, RoutedEventArgs e) => await OpenGame(SelectedGame.Titanfall2);
+
+        async Task OpenGame(SelectedGame game)
+        {
+            _selectedGame = game;
+            GameSelectionView.Visibility = Visibility.Collapsed;
+            InstallerView.Visibility = Visibility.Visible;
+            NavInstall.IsChecked = true;
+            LogsView.Visibility = Visibility.Collapsed;
+            InstallView.Visibility = Visibility.Visible;
+
+            var bigWalk = game == SelectedGame.BigWalk;
+            BigWalkContent.Visibility = bigWalk ? Visibility.Visible : Visibility.Collapsed;
+            TitanfallContent.Visibility = bigWalk ? Visibility.Collapsed : Visibility.Visible;
+            LaunchNonVrButton.Visibility = bigWalk ? Visibility.Visible : Visibility.Collapsed;
+            LaunchButton.Content = "Launch in VR";
+            SelectedGameName.Text = bigWalk ? "Big Walk VR" : "Titanfall 2 VR";
+            SelectedGameImage.Source = new BitmapImage(new Uri(bigWalk ? "Assets/big-walk.jpg" : "Assets/titanfall-2.jpg", UriKind.Relative));
+
+            Status($"Loading {SelectedGameName.Text}...");
+            await Refresh();
+
+            if (bigWalk && HasGame && BepInExInstaller.IsMelonLoaderInstalled(_bigWalk.GamePath))
+                Status("Remove MelonLoader in step 2 to continue.");
+            else if (bigWalk)
+            {
+                var vr = _core.FirstOrDefault();
+                if (vr?.CanUpdate == true) Status($"An update to v{vr.Remote.version} is available");
+                else if (vr?.IsInstalled == true) Status("Everything is up to date");
+            }
+        }
+
+        void BackToGames_Click(object sender, RoutedEventArgs e) => ShowGameSelection();
+
+        void ShowGameSelection()
+        {
+            StopWatcher();
+            LaunchOverlay.Visibility = Visibility.Collapsed;
+            _selectedGame = SelectedGame.None;
+            InstallerView.Visibility = Visibility.Collapsed;
+            GameSelectionView.Visibility = Visibility.Visible;
+            UpdateGameCards();
+            Status("Choose a game to continue");
+        }
 
         async Task Refresh()
         {
             await FetchManifest();
-            RefreshLocalState();
+            if (_selectedGame == SelectedGame.BigWalk) RefreshBigWalkState();
+            else if (_selectedGame == SelectedGame.Titanfall2) RefreshTitanfallState();
+            UpdateGameCards();
         }
 
         async Task FetchManifest()
         {
-            // reuse live entries so an in-flight install keeps its progress bar across a refresh
-            var previous = AllMods.ToDictionary(m => m.Id, m => m);
+            var previous = AllMods.ToDictionary(mod => mod.Id, mod => mod);
             _core.Clear();
             _optional.Clear();
             _selfUpdate = null;
             _bepInExSource = null;
+            _titanfallRelease = null;
+            _bigWalkBetaAvailable = false;
+            _titanfallBetaAvailable = false;
 
             try
             {
                 var manifest = await RepoClient.FetchManifest(AppSettings.ManifestUrl);
+                _bigWalkBetaAvailable = manifest.mods.Any(mod => mod.HasNewerBeta);
+                _titanfallBetaAvailable = manifest.titanfall2vr?.HasNewerBeta == true;
+                var settingsChanged = false;
+                if (!_bigWalkBetaAvailable && _settings.BigWalkBetaUpdates == true)
+                {
+                    _settings.BigWalkBetaUpdates = false;
+                    settingsChanged = true;
+                }
+                if (!_titanfallBetaAvailable && _settings.Titanfall2BetaUpdates == true)
+                {
+                    _settings.Titanfall2BetaUpdates = false;
+                    settingsChanged = true;
+                }
+                if (settingsChanged) _settings.Save();
+
+                var bigWalkBeta = _settings.BigWalkBetaUpdates == true;
                 foreach (var available in manifest.mods)
                 {
-                    var useBeta = _settings.EnableBetaUpdates && available.beta != null;
-                    var remote = available.SelectRelease(_settings.EnableBetaUpdates);
+                    var useBeta = bigWalkBeta && available.HasNewerBeta;
+                    var remote = available.SelectRelease(bigWalkBeta);
                     var entry = previous.TryGetValue(remote.id, out var live) && live.Busy
                         ? live
                         : new ModEntry { Remote = remote, IsBeta = useBeta };
                     (remote.core ? _core : _optional).Add(entry);
                 }
                 _bepInExSource = manifest.bepinex;
+                _titanfallIsBeta = _settings.Titanfall2BetaUpdates == true && _titanfallBetaAvailable;
+                _titanfallRelease = manifest.titanfall2vr?.SelectRelease(_titanfallIsBeta);
                 if (SelfUpdater.IsUpdateAvailable(manifest.installer)) _selfUpdate = manifest.installer;
             }
             catch (Exception ex)
@@ -125,7 +207,7 @@ namespace BigWalkVRInstaller
             if (HasGame)
             {
                 var listedIds = new HashSet<string>(AllMods.Select(mod => mod.Id), StringComparer.OrdinalIgnoreCase);
-                foreach (var record in PackageInstaller.ReadRecords(_settings.GamePath).Where(record => listedIds.Add(record.id)))
+                foreach (var record in PackageInstaller.ReadRecords(_bigWalk.GamePath).Where(record => listedIds.Add(record.id)))
                 {
                     _optional.Add(new ModEntry
                     {
@@ -135,36 +217,41 @@ namespace BigWalkVRInstaller
                 }
             }
 
+            BetaUpdatesToggle.IsChecked = _bigWalkBetaAvailable && _settings.BigWalkBetaUpdates == true;
+            BetaUpdatesToggle.IsEnabled = _bigWalkBetaAvailable;
+            BetaUpdatesToggle.ToolTip = _bigWalkBetaAvailable ? "Receive newer beta releases" : "No newer beta is available";
+            TitanfallBetaUpdatesToggle.IsChecked = _titanfallBetaAvailable && _settings.Titanfall2BetaUpdates == true;
+            TitanfallBetaUpdatesToggle.IsEnabled = _titanfallBetaAvailable;
+            TitanfallBetaUpdatesToggle.ToolTip = _titanfallBetaAvailable ? "Receive newer beta releases" : "No newer beta is available";
             OfflineNotice.Visibility = _core.Count + _optional.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             OptionalSection.Visibility = _optional.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             SelfUpdateBanner.Visibility = _selfUpdate != null ? Visibility.Visible : Visibility.Collapsed;
-            if (_selfUpdate != null)
-                SelfUpdateTitle.Text = $"Installer update available: v{_selfUpdate.version}";
+            if (_selfUpdate != null) SelfUpdateTitle.Text = $"Installer update available: v{_selfUpdate.version}";
         }
 
-        void RefreshLocalState()
+        void RefreshBigWalkState()
         {
             foreach (var mod in AllMods)
             {
-                var record = HasGame ? PackageInstaller.ReadRecord(_settings.GamePath, mod.Id) : null;
+                var record = HasGame ? PackageInstaller.ReadRecord(_bigWalk.GamePath, mod.Id) : null;
                 mod.InstalledBeta = record?.beta ?? false;
                 mod.InstalledVersion = record?.version;
             }
-            UpdateSetupState();
+            UpdateBigWalkSetupState();
         }
 
-        void UpdateSetupState()
+        void UpdateBigWalkSetupState()
         {
-            var bepinex = HasGame && BepInExInstaller.IsInstalled(_settings.GamePath);
-            var melonLoader = HasGame && BepInExInstaller.IsMelonLoaderInstalled(_settings.GamePath);
-            var unknownBootstrap = HasGame && BepInExInstaller.HasUnknownBootstrap(_settings.GamePath);
+            var bepinex = HasGame && BepInExInstaller.IsInstalled(_bigWalk.GamePath);
+            var melonLoader = HasGame && BepInExInstaller.IsMelonLoaderInstalled(_bigWalk.GamePath);
+            var unknownBootstrap = HasGame && BepInExInstaller.HasUnknownBootstrap(_bigWalk.GamePath);
             var loaderReady = bepinex && !melonLoader && !unknownBootstrap;
 
-            GamePathText.Text = HasGame ? _settings.GamePath : "Not found. Press Change and pick your Big Walk folder.";
+            GamePathText.Text = HasGame ? _bigWalk.GamePath : "Not found. Press Change and pick your Big Walk folder.";
             OpenFolderButton.IsEnabled = HasGame;
             SetStep(GameBadge, GameBadgeText, HasGame);
 
-            var bepinexVersion = bepinex ? BepInExInstaller.InstalledVersion(_settings.GamePath) : null;
+            var bepinexVersion = bepinex ? BepInExInstaller.InstalledVersion(_bigWalk.GamePath) : null;
             BepInExText.Text = unknownBootstrap
                 ? "version.dll is active but is not part of a complete MelonLoader install. Restore vanilla or remove it manually."
                 : melonLoader
@@ -176,24 +263,54 @@ namespace BigWalkVRInstaller
             BepInExButton.IsEnabled = HasGame && _bepInExSource != null && !_bepInExBusy && !unknownBootstrap;
             SetStep(BepInExBadge, BepInExBadgeText, loaderReady);
 
-            // no launching until step 3 is done, a modless launch just confuses people
-            var canLaunch = HasGame && loaderReady && _core.Any(m => m.IsInstalled);
+            var canLaunch = HasGame && loaderReady && _core.Any(mod => mod.IsInstalled);
             LaunchNonVrButton.IsEnabled = canLaunch;
             LaunchButton.IsEnabled = canLaunch;
-            LaunchNonVrButton.ToolTip = canLaunch
-                ? "Play normally while seeing VR players' tracked movement"
-                : "Finish steps 1-3 first";
-            LaunchButton.ToolTip = canLaunch
-                ? "Launch Big Walk in VR, start SteamVR first"
-                : "Finish steps 1-3 first";
+            LaunchNonVrButton.ToolTip = canLaunch ? "Play normally while seeing VR players' tracked movement" : "Finish steps 1-3 first";
+            LaunchButton.ToolTip = canLaunch ? "Launch Big Walk in VR, start SteamVR first" : "Finish steps 1-3 first";
             RestoreVanillaButton.IsEnabled = HasGame;
             CrashReportButton.IsEnabled = HasGame;
-            SetStep(ModsBadge, ModsBadgeText, loaderReady && AllMods.Any(m => m.IsCurrent));
+            SetStep(ModsBadge, ModsBadgeText, loaderReady && AllMods.Any(mod => mod.IsCurrent));
 
-            // mods stay greyed out until the game folder and BepInEx are sorted
             var ready = HasGame && loaderReady;
             ModsSection.IsEnabled = ready;
             ModsSection.Opacity = ready ? 1 : 0.4;
+            SelectedGameStatus.Text = canLaunch ? "Ready to play" : HasGame ? "Setup required" : "Game not found";
+        }
+
+        void RefreshTitanfallState()
+        {
+            var hasGame = _titanfall.HasGame;
+            var installed = _titanfall.IsInstalled;
+            var update = installed && _titanfallRelease != null && _titanfall.CanUpdate(_titanfallRelease, _titanfallIsBeta);
+
+            TitanfallGamePathText.Text = hasGame ? _titanfall.GamePath : "Not found. Press Change and pick your Titanfall 2 folder.";
+            TitanfallOpenFolderButton.IsEnabled = hasGame;
+            SetStep(TitanfallGameBadge, TitanfallGameBadgeText, hasGame);
+            SetStep(TitanfallInstallBadge, TitanfallInstallBadgeText, installed && !update);
+
+            TitanfallVersionText.Text = installed
+                ? $"Installed v{_titanfall.Record.version}{(_titanfall.Record.beta ? " beta" : "")}  •  Northstar v{_titanfall.Record.northstarVersion}"
+                : _titanfallRelease != null
+                    ? $"v{_titanfallRelease.version}{(_titanfallIsBeta ? " beta" : "")}  •  Northstar v{Titanfall2Installer.NorthstarVersion}"
+                    : "Download list unavailable";
+            TitanfallUninstallButton.Visibility = installed && !_titanfallBusy ? Visibility.Visible : Visibility.Collapsed;
+            TitanfallInstallButton.Visibility = (!installed || update) && !_titanfallBusy ? Visibility.Visible : Visibility.Collapsed;
+            TitanfallInstalledChip.Visibility = installed && !update && !_titanfallBusy ? Visibility.Visible : Visibility.Collapsed;
+            var channelMismatch = installed && _titanfallRelease != null && _titanfall.Record.beta != _titanfallIsBeta;
+            TitanfallInstallButton.Content = channelMismatch
+                ? $"Switch to {(_titanfallIsBeta ? "beta" : "stable")} v{_titanfallRelease.version}"
+                : update
+                    ? $"Update to v{_titanfallRelease.version}"
+                    : $"Install{(_titanfallRelease == null ? "" : $" v{_titanfallRelease.version}")}";
+            TitanfallInstallButton.Style = (Style)FindResource(update ? "Update" : "Primary");
+            TitanfallInstallButton.IsEnabled = hasGame && _titanfallRelease != null && !_titanfallBusy;
+            BackButton.IsEnabled = !_titanfallBusy;
+            RefreshButton.IsEnabled = !_titanfallBusy;
+            LaunchButton.IsEnabled = installed && !_titanfallBusy;
+            TitanfallCrashReportButton.IsEnabled = hasGame;
+            LaunchButton.ToolTip = installed ? "Launch Titanfall 2 VR" : "Install Titanfall 2 VR first";
+            SelectedGameStatus.Text = installed ? update ? "Update available" : "Ready to play" : hasGame ? "Setup required" : "Game not found";
         }
 
         void SetStep(Border badge, TextBlock label, bool done)
@@ -205,8 +322,6 @@ namespace BigWalkVRInstaller
         }
 
         Brush Brush(string key) => (Brush)FindResource(key);
-
-        // ---- mod install ----
 
         async void Install_Click(object sender, RoutedEventArgs e)
         {
@@ -223,16 +338,16 @@ namespace BigWalkVRInstaller
             mod.BusyText = "Downloading...";
             try
             {
-                var progress = new Progress<double>(p =>
+                var progress = new Progress<double>(value =>
                 {
-                    mod.Progress = p;
-                    mod.BusyText = $"Downloading  {p * 100:0}%";
+                    mod.Progress = value;
+                    mod.BusyText = $"Downloading  {value * 100:0}%";
                 });
                 var bytes = await RepoClient.Download(mod.Remote.url, mod.Remote.sha256, progress);
 
                 mod.BusyText = "Installing...";
                 mod.Progress = 1;
-                await Task.Run(() => PackageInstaller.Install(_settings.GamePath, mod.Remote, bytes, mod.IsBeta));
+                await Task.Run(() => _bigWalk.InstallMod(mod.Remote, bytes, mod.IsBeta));
                 Status($"{mod.Name} v{mod.Remote.version} installed");
             }
             catch (Exception ex)
@@ -242,7 +357,8 @@ namespace BigWalkVRInstaller
             finally
             {
                 mod.Busy = false;
-                RefreshLocalState();
+                RefreshBigWalkState();
+                UpdateGameCards();
             }
         }
 
@@ -254,7 +370,7 @@ namespace BigWalkVRInstaller
 
             try
             {
-                PackageInstaller.Uninstall(_settings.GamePath, mod.Id);
+                _bigWalk.UninstallMod(mod.Id);
                 Status($"{mod.Name} removed");
             }
             catch (Exception ex)
@@ -264,9 +380,23 @@ namespace BigWalkVRInstaller
             await Refresh();
         }
 
-        // game holds its dlls open, writing over them mid-session corrupts the install
         bool Ready()
         {
+            if (_selectedGame == SelectedGame.Titanfall2)
+            {
+                if (!_titanfall.HasGame)
+                {
+                    Status("Pick your Titanfall 2 folder first", true);
+                    return false;
+                }
+                if (Titanfall2Installer.IsRunning())
+                {
+                    Status("Close Titanfall 2 before changing the installation", true);
+                    return false;
+                }
+                return true;
+            }
+
             if (!HasGame)
             {
                 Status("Pick your Big Walk folder first", true);
@@ -283,15 +413,11 @@ namespace BigWalkVRInstaller
         async void RestoreVanilla_Click(object sender, RoutedEventArgs e)
         {
             if (!Ready()) return;
-            if (!await Confirm("Restore vanilla Big Walk",
-                "Permanently removes every installed mod, BepInEx, and MelonLoader.",
-                "Restore vanilla")) return;
+            if (!await Confirm("Restore vanilla Big Walk", "Permanently removes every installed mod, BepInEx, and MelonLoader.", "Restore vanilla")) return;
 
             try
             {
-                foreach (var mod in AllMods.Where(m => m.IsInstalled).ToList())
-                    PackageInstaller.Uninstall(_settings.GamePath, mod.Id);
-                BepInExInstaller.Remove(_settings.GamePath);
+                _bigWalk.RestoreVanilla();
                 Status("Big Walk is back to vanilla");
             }
             catch (Exception ex)
@@ -301,8 +427,6 @@ namespace BigWalkVRInstaller
             await Refresh();
         }
 
-        // ---- BepInEx ----
-
         async void InstallBepInEx_Click(object sender, RoutedEventArgs e)
         {
             if (await InstallBepInEx()) await Refresh();
@@ -311,7 +435,7 @@ namespace BigWalkVRInstaller
         async Task<bool> InstallBepInEx()
         {
             if (!Ready()) return false;
-            if (BepInExInstaller.IsMelonLoaderInstalled(_settings.GamePath) && !await Confirm(
+            if (BepInExInstaller.IsMelonLoaderInstalled(_bigWalk.GamePath) && !await Confirm(
                 "Remove MelonLoader",
                 "Installing BepInEx will permanently remove MelonLoader and everything in its Mods, Plugins, and UserLibs folders. BigWalkVR settings will be migrated. No backup will be created.",
                 "Remove and install")) return false;
@@ -325,17 +449,16 @@ namespace BigWalkVRInstaller
             Status("Downloading BepInEx...");
             try
             {
-                // mirrored onto the status bar, the install can be kicked off from the Mods tab banner
-                var progress = new Progress<double>(p =>
+                var progress = new Progress<double>(value =>
                 {
-                    BepInExProgress.Value = p;
-                    BepInExProgressText.Text = StatusText.Text = $"Downloading BepInEx  {p * 100:0}%";
+                    BepInExProgress.Value = value;
+                    BepInExProgressText.Text = StatusText.Text = $"Downloading BepInEx  {value * 100:0}%";
                 });
                 var bytes = await RepoClient.Download(_bepInExSource.url, _bepInExSource.sha256, progress);
 
                 BepInExProgressText.Text = StatusText.Text = "Installing BepInEx...";
                 BepInExProgress.Value = 1;
-                var migration = await Task.Run(() => BepInExInstaller.Extract(_settings.GamePath, bytes));
+                var migration = await Task.Run(() => _bigWalk.InstallLoader(bytes));
                 Status(migration.Migrated ? migration.Details : $"BepInEx v{_bepInExSource.version} installed");
                 installed = true;
             }
@@ -347,19 +470,93 @@ namespace BigWalkVRInstaller
             {
                 _bepInExBusy = false;
                 BepInExProgressPanel.Visibility = Visibility.Collapsed;
-                UpdateSetupState();
+                UpdateBigWalkSetupState();
             }
             return installed;
         }
 
-        // ---- shell actions ----
+        async void TitanfallInstall_Click(object sender, RoutedEventArgs e)
+        {
+            if (!Ready() || _titanfallRelease == null) return;
+            _titanfallBusy = true;
+            TitanfallProgressPanel.Visibility = Visibility.Visible;
+            TitanfallProgress.Value = 0;
+            RefreshTitanfallState();
+            try
+            {
+                Status("Downloading Northstar...");
+                var northstarProgress = new Progress<double>(value =>
+                {
+                    TitanfallProgress.Value = value * 0.95;
+                    TitanfallProgressText.Text = $"Downloading Northstar  {value * 100:0}%";
+                });
+                var northstar = await RepoClient.Download(
+                    Titanfall2Installer.NorthstarUrl, Titanfall2Installer.NorthstarSha256, northstarProgress);
+
+                Status("Downloading Titanfall 2 VR...");
+                var modProgress = new Progress<double>(value =>
+                {
+                    TitanfallProgress.Value = 0.95 + value * 0.05;
+                    TitanfallProgressText.Text = $"Downloading Titanfall 2 VR  {value * 100:0}%";
+                });
+                var mod = await RepoClient.Download(_titanfallRelease.url, _titanfallRelease.sha256, modProgress);
+
+                TitanfallProgressText.Text = "Installing isolated Northstar profile...";
+                TitanfallProgress.Value = 1;
+                await Task.Run(() => _titanfall.Install(northstar, _titanfallRelease, mod, _titanfallIsBeta));
+                Status($"Titanfall 2 VR v{_titanfallRelease.version} installed");
+            }
+            catch (Exception ex)
+            {
+                Status($"Titanfall 2 VR install failed: {ex.Message}", true);
+            }
+            finally
+            {
+                _titanfallBusy = false;
+                TitanfallProgressPanel.Visibility = Visibility.Collapsed;
+                RefreshTitanfallState();
+                UpdateGameCards();
+            }
+        }
+
+        async void TitanfallUninstall_Click(object sender, RoutedEventArgs e)
+        {
+            if (!Ready()) return;
+            if (!await Confirm("Uninstall Titanfall 2 VR", "Removes the TF2VR profile, renamed launcher, and files owned by this installer.", "Uninstall")) return;
+            try
+            {
+                _titanfall.Uninstall();
+                Status("Titanfall 2 VR removed");
+            }
+            catch (Exception ex)
+            {
+                Status($"Titanfall 2 VR uninstall failed: {ex.Message}", true);
+            }
+            RefreshTitanfallState();
+            UpdateGameCards();
+        }
 
         void LaunchNonVr_Click(object sender, RoutedEventArgs e) => Launch(
-            () => GameLauncher.LaunchNonVr(_settings.GamePath), "Launching Big Walk in Non-VR mode", "");
+            () => _bigWalk.PlayNonVr(), "Launching Big Walk in Non-VR mode", "");
 
-        void Launch_Click(object sender, RoutedEventArgs e) => Launch(
-            () => GameLauncher.LaunchVr(_settings.GamePath), "Launching Big Walk in VR",
-            "Make sure SteamVR is running and your headset is connected.");
+        void Launch_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedGame == SelectedGame.Titanfall2)
+            {
+                try
+                {
+                    _titanfall.Play();
+                    Status("Launching Titanfall 2 VR");
+                }
+                catch (Exception ex)
+                {
+                    Status($"Launch failed: {ex.Message}", true);
+                }
+                return;
+            }
+
+            Launch(() => _bigWalk.Play(), "Launching Big Walk in VR", "Make sure SteamVR is running and your headset is connected.");
+        }
 
         void Launch(Action launch, string title, string description)
         {
@@ -375,8 +572,6 @@ namespace BigWalkVRInstaller
             }
         }
 
-        // ---- launch modal ----
-
         void ShowLaunchModal(string title, string description)
         {
             StopWatcher();
@@ -386,7 +581,7 @@ namespace BigWalkVRInstaller
             GenPanel.Visibility = Visibility.Collapsed;
             LaunchOverlay.Visibility = Visibility.Visible;
 
-            _watcher = new GameStartupWatcher(_settings.GamePath, new Progress<LaunchPhase>(OnLaunchPhase));
+            _watcher = new GameStartupWatcher(_bigWalk.GamePath, new Progress<LaunchPhase>(OnLaunchPhase));
             _watcher.Start();
         }
 
@@ -402,26 +597,21 @@ namespace BigWalkVRInstaller
                     GenText.Visibility = Visibility.Visible;
                     Status("BepInEx is doing one-time setup for this game version");
                     break;
-
                 case LaunchPhase.GenerationDone:
                     GenCheck.Visibility = Visibility.Visible;
                     GenTitle.Text = "Setup complete";
                     GenText.Visibility = Visibility.Collapsed;
                     Status("One-time setup finished");
                     break;
-
-                // the modal stays up for the whole session, it is the only way to stop the game again
                 case LaunchPhase.Ready:
                     LaunchTitle.Text = "Big Walk is running";
                     LaunchDescription.Visibility = Visibility.Collapsed;
                     Status("Big Walk is running");
                     break;
-
                 case LaunchPhase.Exited:
                     CloseLaunchModal();
                     Status("Big Walk closed");
                     break;
-
                 case LaunchPhase.Crashed:
                     CloseLaunchModal();
                     Status("Big Walk may have crashed", true);
@@ -444,7 +634,7 @@ namespace BigWalkVRInstaller
 
         void LaunchStop_Click(object sender, RoutedEventArgs e)
         {
-            _watcher?.StopGame(); // stop before the watcher is dropped, it owns the process handle
+            _watcher?.StopGame();
             CloseLaunchModal();
             Status("Stopping Big Walk");
         }
@@ -457,9 +647,11 @@ namespace BigWalkVRInstaller
 
         async void BetaUpdates_Click(object sender, RoutedEventArgs e)
         {
-            _settings.EnableBetaUpdates = BetaUpdatesToggle.IsChecked == true;
+            var enabled = ((CheckBox)sender).IsChecked == true;
+            if (ReferenceEquals(sender, TitanfallBetaUpdatesToggle)) _settings.Titanfall2BetaUpdates = enabled;
+            else _settings.BigWalkBetaUpdates = enabled;
             _settings.Save();
-            Status(_settings.EnableBetaUpdates ? "Beta updates enabled. Beta builds are unstable." : "Stable updates enabled");
+            Status(enabled ? "Beta updates enabled. Beta builds are unstable." : "Stable updates enabled");
             await Refresh();
         }
 
@@ -470,59 +662,88 @@ namespace BigWalkVRInstaller
 
         bool PromptGamePath()
         {
+            var titanfall = _selectedGame == SelectedGame.Titanfall2;
             using (var dialog = new System.Windows.Forms.FolderBrowserDialog())
             {
-                dialog.Description = "Select the Big Walk game folder";
-                if (HasGame) dialog.SelectedPath = _settings.GamePath;
+                dialog.Description = titanfall ? "Select the Titanfall 2 game folder" : "Select the Big Walk game folder";
+                if (titanfall && _titanfall.HasGame) dialog.SelectedPath = _titanfall.GamePath;
+                else if (!titanfall && HasGame) dialog.SelectedPath = _bigWalk.GamePath;
                 if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
-                if (!GameLocator.IsValidGamePath(dialog.SelectedPath))
+
+                try
                 {
-                    Status($"That folder doesn't contain {GameLocator.ExeName}", true);
+                    if (titanfall) _titanfall.SetGamePath(dialog.SelectedPath);
+                    else _bigWalk.SetGamePath(dialog.SelectedPath);
+                    Status($"Game folder set to {(titanfall ? _titanfall.GamePath : _bigWalk.GamePath)}");
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Status(ex.Message, true);
                     return false;
                 }
-                _settings.GamePath = GameLocator.Canonical(dialog.SelectedPath);
-                _settings.Save();
-                Status($"Game folder set to {_settings.GamePath}");
-                return true;
             }
         }
 
-        void OpenGameFolder_Click(object sender, RoutedEventArgs e) => Open(() => GameLauncher.OpenFolder(_settings.GamePath));
+        void OpenGameFolder_Click(object sender, RoutedEventArgs e) => Open(() =>
+            GameLauncher.OpenFolder(_selectedGame == SelectedGame.Titanfall2 ? _titanfall.GamePath : _bigWalk.GamePath));
 
         void OpenModLogs_Click(object sender, RoutedEventArgs e) => Open(() =>
         {
-            var log = Path.Combine(_settings.GamePath, "BepInEx", "LogOutput.log");
+            var log = Path.Combine(_bigWalk.GamePath, "BepInEx", "LogOutput.log");
             if (File.Exists(log)) GameLauncher.OpenUrl(log);
-            else GameLauncher.OpenFolder(Path.Combine(_settings.GamePath, "BepInEx"));
+            else GameLauncher.OpenFolder(Path.Combine(_bigWalk.GamePath, "BepInEx"));
         });
 
         void OpenDiscord_Click(object sender, RoutedEventArgs e) => Open(() => GameLauncher.OpenUrl(DiscordUrl));
-
         void OpenSupport_Click(object sender, RoutedEventArgs e) => Open(() => GameLauncher.OpenUrl(SupportUrl));
-
         void OpenRepo_Click(object sender, RoutedEventArgs e) => Open(() => GameLauncher.OpenUrl(RepoUrl));
-
-        async void CreateCrashReport_Click(object sender, RoutedEventArgs e) => await PromptCrashReport("Create crash report");
+        async void CreateCrashReport_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedGame == SelectedGame.Titanfall2) await PromptTitanfallCrashReport();
+            else await PromptCrashReport("Create crash report");
+        }
 
         async Task PromptCrashReport(string title)
         {
-            if (await Confirm(
-                title,
+            if (await Confirm(title,
                 "Create a ZIP containing the BepInEx and Unity logs. Logs may contain personal or device details, so review them before sharing.",
-                "Create report",
-                false)) await CreateCrashReport();
+                "Create report", false)) await CreateCrashReport();
         }
 
         async Task CreateCrashReport()
         {
             try
             {
-                var report = CrashReportService.Create(_settings.GamePath);
+                var report = CrashReportService.Create(_bigWalk.GamePath);
+                GameLauncher.SelectFile(report);
+                Status("Crash report created on the Desktop.");
+                if (await Confirm("Crash report ready",
+                    "The ZIP is selected in Explorer. You can send it in the #support channel in the Big Walk VR Discord.",
+                    "Open Discord", false)) GameLauncher.OpenUrl(DiscordUrl);
+            }
+            catch (Exception ex)
+            {
+                Status($"Couldn't create the crash report: {ex.Message}", true);
+            }
+        }
+
+        async Task PromptTitanfallCrashReport()
+        {
+            if (!await Confirm(
+                "Create crash report",
+                "Create a ZIP containing the latest Northstar log and minidump plus Titanfall 2 VR diagnostics. Minidumps may contain account, server, device, or memory details. Share it only with support.",
+                "Create report",
+                false)) return;
+
+            try
+            {
+                var report = CrashReportService.CreateTitanfall(_titanfall.GamePath);
                 GameLauncher.SelectFile(report);
                 Status("Crash report created on the Desktop.");
                 if (await Confirm(
                     "Crash report ready",
-                    "The ZIP is selected in Explorer. You can send it in the #support channel in the Big Walk VR Discord.",
+                    "The ZIP is selected in Explorer. Review where you share it because the minidump contains process memory.",
                     "Open Discord",
                     false)) GameLauncher.OpenUrl(DiscordUrl);
             }
@@ -557,11 +778,9 @@ namespace BigWalkVRInstaller
             }
         }
 
-        // ---- chrome ----
-
         void Nav_Checked(object sender, RoutedEventArgs e)
         {
-            if (InstallView == null) return; // fires during InitializeComponent
+            if (InstallView == null) return;
             InstallView.Visibility = NavInstall.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
             LogsView.Visibility = NavLogs.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         }
@@ -570,7 +789,7 @@ namespace BigWalkVRInstaller
 
         Task<bool> Confirm(string title, string text, string okLabel, bool danger = true)
         {
-            if (_confirm != null) return Task.FromResult(false); // already asking something else
+            if (_confirm != null) return Task.FromResult(false);
             ConfirmTitle.Text = title;
             ConfirmText.Text = text;
             ConfirmOk.Content = okLabel;
@@ -593,10 +812,18 @@ namespace BigWalkVRInstaller
 
         void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            // escape does not dismiss the launch modal, Stop is the only way out so the game can't be orphaned
-            if (_confirm == null || e.Key != System.Windows.Input.Key.Escape) return;
-            CloseConfirm(false);
-            e.Handled = true;
+            if (e.Key != System.Windows.Input.Key.Escape) return;
+            if (_confirm != null)
+            {
+                CloseConfirm(false);
+                e.Handled = true;
+                return;
+            }
+            if (_selectedGame != SelectedGame.None && LaunchOverlay.Visibility != Visibility.Visible)
+            {
+                ShowGameSelection();
+                e.Handled = true;
+            }
         }
 
         void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;

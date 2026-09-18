@@ -6,9 +6,9 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <LangVersion>latest</LangVersion>
-    <AssemblyName>BigWalkVRInstaller</AssemblyName>
+    <AssemblyName>CircuitLordsVRModsInstaller</AssemblyName>
     <RootNamespace>BigWalkVRInstaller</RootNamespace>
-    <Version>1.1.2</Version>
+    <Version>1.1.3</Version>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
   </PropertyGroup>
@@ -22,6 +22,8 @@
 
   <ItemGroup>
     <Resource Include="app.ico" />
+    <Resource Include="Assets\big-walk.jpg" />
+    <Resource Include="Assets\titanfall-2.jpg" />
   </ItemGroup>
 
   <ItemGroup>

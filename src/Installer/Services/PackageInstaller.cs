@@ -131,25 +131,8 @@ namespace BigWalkVRInstaller.Services
 
         internal static void DeleteRelative(string gamePath, string relative)
         {
-            try
-            {
-                var path = ResolveInside(gamePath, relative);
-                if (File.Exists(path)) File.Delete(path);
-                PruneEmptyDirs(gamePath, Path.GetDirectoryName(path));
-            }
-            catch { } // locked or already gone, not worth failing the whole uninstall
-        }
-
-        // walks up from dir removing empty folders, stops at the game root
-        static void PruneEmptyDirs(string gamePath, string dir)
-        {
-            var root = Path.GetFullPath(gamePath).TrimEnd('\\');
-            while (!string.IsNullOrEmpty(dir) && !dir.TrimEnd('\\').Equals(root, StringComparison.OrdinalIgnoreCase))
-            {
-                if (!Directory.Exists(dir) || Directory.EnumerateFileSystemEntries(dir).Any()) return;
-                Directory.Delete(dir);
-                dir = Path.GetDirectoryName(dir);
-            }
+            try { InstallerFileSystem.DeleteRelative(gamePath, relative); }
+            catch { }
         }
 
         static void FillTokens(string path, string gamePath)
@@ -159,20 +142,14 @@ namespace BigWalkVRInstaller.Services
             File.WriteAllText(path, text);
         }
 
-        static string Normalize(string entryPath) => entryPath.Replace('/', '\\').TrimStart('\\');
+        static string Normalize(string entryPath) => InstallerFileSystem.Normalize(entryPath);
 
         // manifest authors may use either slash, match on the normalized form
         static HashSet<string> PathSet(List<string> paths) =>
             new HashSet<string>((paths ?? new List<string>()).Select(Normalize), StringComparer.OrdinalIgnoreCase);
 
         // keeps a malicious or malformed package from writing outside the game folder
-        internal static string ResolveInside(string gamePath, string relative)
-        {
-            var root = Path.GetFullPath(gamePath).TrimEnd('\\') + "\\";
-            var full = Path.GetFullPath(Path.Combine(root, relative));
-            if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase))
-                throw new Exception($"package tried to write outside the game folder: {relative}");
-            return full;
-        }
+        internal static string ResolveInside(string gamePath, string relative) =>
+            InstallerFileSystem.ResolveInside(gamePath, relative);
     }
 }

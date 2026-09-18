@@ -6,6 +6,17 @@ using System.Linq;
 
 namespace BigWalkVRInstaller.Services
 {
+    public class TitanfallCrashMetadata
+    {
+        public string generatedUtc;
+        public string installerVersion;
+        public string modVersion;
+        public string northstarVersion;
+        public string modSha256;
+        public string osVersion;
+        public bool is64BitOperatingSystem;
+    }
+
     public static class CrashReportService
     {
         public static string Create(string gamePath)
@@ -19,19 +30,72 @@ namespace BigWalkVRInstaller.Services
             };
 
             if (!logs.Any(log => File.Exists(log.Value))) throw new Exception("No Big Walk log files were found.");
+            var reportPath = DesktopReportPath("BigWalkVR");
+            using (var stream = File.Create(reportPath))
+            using (var archive = new ZipArchive(stream, ZipArchiveMode.Create))
+                foreach (var log in logs)
+                    if (File.Exists(log.Value)) AddFile(archive, log.Value, log.Key);
+            return reportPath;
+        }
 
-            var reportPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-                $"BigWalkVR-CrashReport-{DateTime.Now:yyyyMMdd-HHmmss}.zip");
+        public static string CreateTitanfall(string gamePath, string outputDirectory = null)
+        {
+            var profile = Path.Combine(gamePath, "TF2VR");
+            var files = new Dictionary<string, string>();
+            AddNewest(files, Path.Combine(profile, "logs"), "nslog*.txt", "Northstar");
+            AddNewest(files, Path.Combine(profile, "logs"), "nsdump*.dmp", "Northstar");
 
+            var data = Path.Combine(profile, "plugins", "Titanfall2VR-data");
+            foreach (var name in new[] { "engine.txt", "events.txt", "runtime.txt", "frames.csv" })
+            {
+                var path = Path.Combine(data, name);
+                if (File.Exists(path)) files["Titanfall2VR/" + name] = path;
+            }
+            if (files.Count == 0) throw new Exception("No Titanfall 2 VR crash files were found.");
+
+            var record = OwnedFileStore.Read(gamePath, "Titanfall2VR");
+            var plugin = Path.Combine(profile, "plugins", "Titanfall2VR.dll");
+            var metadata = new TitanfallCrashMetadata
+            {
+                generatedUtc = DateTime.UtcNow.ToString("O"),
+                installerVersion = SelfUpdater.CurrentVersion,
+                modVersion = record?.version,
+                northstarVersion = record?.northstarVersion,
+                modSha256 = File.Exists(plugin) ? RepoClient.Sha256(File.ReadAllBytes(plugin)) : null,
+                osVersion = Environment.OSVersion.VersionString,
+                is64BitOperatingSystem = Environment.Is64BitOperatingSystem
+            };
+
+            var directory = outputDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+            var reportPath = Path.Combine(directory, $"Titanfall2VR-CrashReport-{DateTime.Now:yyyyMMdd-HHmmss}.zip");
             using (var stream = File.Create(reportPath))
             using (var archive = new ZipArchive(stream, ZipArchiveMode.Create))
             {
-                foreach (var log in logs)
-                    if (File.Exists(log.Value)) archive.CreateEntryFromFile(log.Value, log.Key, CompressionLevel.Optimal);
+                foreach (var file in files) AddFile(archive, file.Value, file.Key);
+                var entry = archive.CreateEntry("report.json", CompressionLevel.Optimal);
+                using (var writer = new StreamWriter(entry.Open())) writer.Write(JsonUtil.Serialize(metadata));
             }
-
             return reportPath;
+        }
+
+        static string DesktopReportPath(string name) => Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+            $"{name}-CrashReport-{DateTime.Now:yyyyMMdd-HHmmss}.zip");
+
+        static void AddNewest(IDictionary<string, string> files, string directory, string pattern, string entryDirectory)
+        {
+            if (!Directory.Exists(directory)) return;
+            var file = new DirectoryInfo(directory).EnumerateFiles(pattern)
+                .OrderByDescending(candidate => candidate.LastWriteTimeUtc)
+                .FirstOrDefault();
+            if (file != null) files[entryDirectory + "/" + file.Name] = file.FullName;
+        }
+
+        static void AddFile(ZipArchive archive, string path, string entryName)
+        {
+            var entry = archive.CreateEntry(entryName, CompressionLevel.Optimal);
+            using (var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+            using (var output = entry.Open()) input.CopyTo(output);
         }
     }
 }
