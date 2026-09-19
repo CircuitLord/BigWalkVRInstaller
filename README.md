@@ -24,7 +24,7 @@ Your non-vr friends can install the mod and still play in flatscreen!
 
 1. **Finds Big Walk** through your Steam install.
 2. **Sets up BepInEx**, the mod loader Big Walk VR depends on.
-3. **Installs the mod**
+3. **Installs the mod** into your game directory.
 
 Launching Big Walk normally through Steam stays non-VR while showing VR players' tracked movement. To play in VR, start SteamVR and use the installer's Launch in VR button.
 
