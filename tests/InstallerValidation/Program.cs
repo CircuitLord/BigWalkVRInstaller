@@ -25,6 +25,13 @@ namespace InstallerValidation
                 Assert(!sameBeta.HasNewerBeta, "stable-equivalent beta was available");
                 Assert(newerBeta.HasNewerBeta, "newer beta was unavailable");
 
+                var profile = Path.Combine(root, "TF2VR");
+                var userFile = Path.Combine(profile, "save_data", "user.json");
+                Directory.CreateDirectory(Path.GetDirectoryName(userFile));
+                File.WriteAllText(userFile, "user-data");
+                File.WriteAllText(Path.Combine(profile, "Northstar.dll"), "untracked-profile");
+                File.WriteAllText(Path.Combine(root, "Titanfall2VRLauncher.exe"), "untracked-launcher");
+
                 var installer = new Titanfall2Installer(new AppSettings { Titanfall2Path = root });
                 var release = new ManifestMod { version = "0.1.0" };
                 installer.Install(NorthstarPackage("vr-launcher-v1", true), release, ModPackage("vr-plugin-v1"), false);
@@ -34,6 +41,7 @@ namespace InstallerValidation
                 Assert(File.ReadAllText(Path.Combine(root, "Titanfall2VRLauncher.exe")) == "vr-launcher-v1", "renamed launcher missing");
                 Assert(File.ReadAllText(Path.Combine(root, "TF2VR", "Northstar.dll")) == "vr-profile", "VR profile missing");
                 Assert(File.ReadAllText(Path.Combine(root, "TF2VR", "plugins", "Titanfall2VR.dll")) == "vr-plugin-v1", "VR plugin missing");
+                Assert(File.ReadAllText(userFile) == "user-data", "untracked user file changed during adoption");
 
                 Assert(installer.IsInstalled, "complete VR package was not recognized");
                 Assert(File.ReadAllText(Path.Combine(root, "TF2VR", "tools", "xr_probe.exe")) == "probe", "resolution probe missing");
@@ -53,9 +61,6 @@ namespace InstallerValidation
                 });
                 Assert(wide.Arguments.Contains("-w 4100 -h 1000"), "wide eye resolution was cropped");
 
-                var userFile = Path.Combine(root, "TF2VR", "save_data", "user.json");
-                Directory.CreateDirectory(Path.GetDirectoryName(userFile));
-                File.WriteAllText(userFile, "user-data");
                 installer.Install(NorthstarPackage("vr-launcher-v2", false), new ManifestMod { version = "0.2.0" }, ModPackage("vr-plugin-v2"), true);
                 Assert(!File.Exists(Path.Combine(root, "TF2VR", "plugins", "ranim.dll")), "stale owned file survived update");
                 Assert(File.ReadAllText(userFile) == "user-data", "user file changed during update");
@@ -87,7 +92,12 @@ namespace InstallerValidation
                 Assert(File.ReadAllText(Path.Combine(root, "NorthstarLauncher.exe")) == "standard-launcher", "standard launcher changed after uninstall");
                 Assert(File.ReadAllText(Path.Combine(root, "R2Northstar", "Northstar.dll")) == "standard-profile", "standard profile changed after uninstall");
 
-                Console.WriteLine("validated TF2VR install, beta updates, crash reports, uninstall, and profile switching");
+                installer.Install(NorthstarPackage("vr-launcher-v3", false), new ManifestMod { version = "0.3.0" }, ModPackage("vr-plugin-v3"), false);
+                Assert(installer.IsInstalled, "VR package was not recognized after reinstall");
+                Assert(File.ReadAllText(Path.Combine(root, "TF2VR", "plugins", "Titanfall2VR.dll")) == "vr-plugin-v3", "reinstalled VR plugin missing");
+                Assert(File.ReadAllText(userFile) == "user-data", "user file changed during reinstall");
+
+                Console.WriteLine("validated TF2VR install, beta updates, crash reports, uninstall, reinstall, and profile switching");
                 return 0;
             }
             catch (Exception ex)

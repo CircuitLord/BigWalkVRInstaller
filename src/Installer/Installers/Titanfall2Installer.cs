@@ -80,9 +80,6 @@ namespace BigWalkVRInstaller.Installers
         public void Install(byte[] northstarPackage, ManifestMod modRelease, byte[] modPackage, bool beta)
         {
             var previous = Record;
-            if (previous == null && (Directory.Exists(Path.Combine(GamePath, ProfileName)) || File.Exists(Path.Combine(GamePath, LauncherName))))
-                throw new Exception("TF2VR already exists but is not owned by this installer");
-
             var written = new List<string>();
             using (var northstarStream = new MemoryStream(northstarPackage))
             using (var northstarArchive = new ZipArchive(northstarStream, ZipArchiveMode.Read))
