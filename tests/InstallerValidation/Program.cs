@@ -78,12 +78,14 @@ namespace InstallerValidation
 
                 Assert(installer.IsInstalled, "complete VR package was not recognized");
                 Assert(File.ReadAllText(Path.Combine(root, "TF2VR", "tools", "xr_probe.exe")) == "probe", "resolution probe missing");
+                Assert(File.ReadAllText(Path.Combine(root, "TF2VR", "tools", "crash_monitor.exe")) == "monitor", "crash monitor missing");
                 Assert(File.Exists(Path.Combine(root, "TF2VR", "mods", "Titanfall2VR.Cockpit", "mod.json")), "cockpit assets missing");
                 var launch = Titanfall2Installer.CreateLaunchInfo(root, new[] {
                     new OpenXrView { width = 2100, height = 2200 }, new OpenXrView { width = 2000, height = 2160 }
                 });
-                Assert(launch.FileName == Path.Combine(root, "Titanfall2VRLauncher.exe"), "wrong launcher path");
-                Assert(launch.Arguments == "-profile=TF2VR -windowed -w 3912 -h 2200 +sound_without_focus 1 +mat_vsync_mode 0", "wrong VR launch arguments");
+                Assert(launch.FileName == Path.Combine(root, "TF2VR", "tools", "crash_monitor.exe"), "launch bypassed crash capture");
+                Assert(launch.Arguments == "\"" + profile + "\" \"" + Path.Combine(root, "Titanfall2VRLauncher.exe")
+                    + "\" -profile=TF2VR -windowed -w 3912 -h 2200 +sound_without_focus 1 +mat_vsync_mode 0", "wrong monitored launch arguments");
                 Assert(launch.EnvironmentVariables["TF2VR_OPENXR"] == "1", "OpenXR was not enabled");
                 Assert(!launch.EnvironmentVariables.ContainsKey("TF2VR_DEV_SESSION"), "development session inherited");
                 Assert(!launch.EnvironmentVariables.ContainsKey("XR_RUNTIME_JSON"), "runtime override inherited");
@@ -109,7 +111,8 @@ namespace InstallerValidation
                 File.WriteAllText(Path.Combine(diagnostics, "engine.txt"), "engine-log");
                 File.WriteAllText(Path.Combine(diagnostics, "events.txt"), "events");
                 var report = CrashReportService.CreateTitanfall(root, root);
-                using (var archive = ZipFile.OpenRead(report))
+                Assert(report.dumpIncluded, "available dump was not reported");
+                using (var archive = ZipFile.OpenRead(report.path))
                 {
                     Assert(archive.GetEntry("Northstar/nslog-test.txt") != null, "Northstar log missing from crash report");
                     Assert(archive.GetEntry("Northstar/nsdump-test.dmp") != null, "minidump missing from crash report");
@@ -117,10 +120,13 @@ namespace InstallerValidation
                     Assert(archive.GetEntry("report.json") != null, "crash metadata missing from report");
                 }
 
+                ValidateCrashCaptureReport(root, profile);
+
                 installer.Uninstall();
                 Assert(!File.Exists(Path.Combine(root, "Titanfall2VRLauncher.exe")), "renamed launcher survived uninstall");
                 Assert(!File.Exists(Path.Combine(root, "TF2VR", "Northstar.dll")), "VR profile survived uninstall");
                 Assert(!File.Exists(Path.Combine(root, "TF2VR", "tools", "xr_probe.exe")), "probe survived uninstall");
+                Assert(!File.Exists(Path.Combine(root, "TF2VR", "tools", "crash_monitor.exe")), "monitor survived uninstall");
                 Assert(!File.Exists(Path.Combine(root, "TF2VR", "mods", "Titanfall2VR.Cockpit", "mod.json")), "cockpit survived uninstall");
                 Assert(File.ReadAllText(userFile) == "user-data", "user file changed during uninstall");
                 Assert(File.ReadAllText(Path.Combine(vrProfile, "savegames", "savegame.sav")) == "vr-progress", "uninstall changed VR progress");
@@ -254,6 +260,45 @@ namespace InstallerValidation
             Assert(((Grid)window.FindName("InstallerView")).IsEnabled, "closing saves modal left launch controls disabled");
         }
 
+        static void ValidateCrashCaptureReport(string root, string profile)
+        {
+            var session = Path.Combine(profile, "crashes", "20260920T000000000Z-11");
+            var incident = Path.Combine(session, "exception-11");
+            Directory.CreateDirectory(incident);
+            File.WriteAllText(Path.Combine(session, "incident.txt"), "exception");
+            File.WriteAllText(Path.Combine(session, "monitor.txt"), "process_exit code=3221225477");
+            File.WriteAllText(Path.Combine(session, "session.json"), "{\"modSha256\":\"captured-plugin\"}");
+            File.WriteAllText(Path.Combine(incident, "capture.txt"), "dump_written=1");
+            File.WriteAllText(Path.Combine(incident, "engine.txt"), "frozen-log");
+            File.WriteAllText(Path.Combine(incident, "process.dmp"), "captured-memory");
+            File.WriteAllText(Path.Combine(incident, "process.partial"), "incomplete-memory");
+            var later = Path.Combine(profile, "crashes", "20260920T010000000Z-12");
+            Directory.CreateDirectory(later);
+            File.WriteAllText(Path.Combine(later, "monitor.txt"), "normal exit");
+            var report = CrashReportService.CreateTitanfall(root, root);
+            Assert(report.dumpIncluded, "captured dump was not reported");
+            using (var archive = ZipFile.OpenRead(report.path))
+            {
+                Assert(archive.GetEntry("Capture/exception-11/process.dmp") != null, "captured dump missing");
+                Assert(archive.GetEntry("Capture/exception-11/process.partial") == null, "partial dump was packaged");
+                Assert(archive.GetEntry("Northstar/nsdump-test.dmp") == null, "unrelated Northstar dump was mixed into capture");
+                using (var reader = new StreamReader(archive.GetEntry("Capture/exception-11/engine.txt").Open()))
+                    Assert(reader.ReadToEnd() == "frozen-log", "live logs replaced incident logs");
+                using (var reader = new StreamReader(archive.GetEntry("report.json").Open()))
+                {
+                    var metadata = JsonUtil.Deserialize<TitanfallCrashMetadata>(reader.ReadToEnd());
+                    Assert(metadata.capturedModSha256 == "captured-plugin", "installed binary replaced capture identity");
+                }
+            }
+            File.WriteAllText(Path.Combine(later, "incident.txt"), "monitor_error");
+            File.WriteAllText(Path.Combine(later, "session.json"), "{\"modSha256\":\"later-plugin\"}");
+            var missing = CrashReportService.CreateTitanfall(root, root);
+            Assert(!missing.dumpIncluded, "capture failure borrowed an older dump");
+            using (var archive = ZipFile.OpenRead(missing.path))
+                using (var reader = new StreamReader(archive.GetEntry("report.json").Open()))
+                    Assert(!JsonUtil.Deserialize<TitanfallCrashMetadata>(reader.ReadToEnd()).dumpIncluded, "missing dump omitted from metadata");
+        }
+
         static byte[] NorthstarPackage(string launcher, bool includeRanim)
         {
             using (var stream = new MemoryStream())
@@ -276,6 +321,7 @@ namespace InstallerValidation
                 {
                     Add(archive, "Titanfall2VR.dll", plugin);
                     Add(archive, "xr_probe.exe", "probe");
+                    Add(archive, "crash_monitor.exe", "monitor");
                     Add(archive, "launch.json", JsonUtil.Serialize(new TitanfallLaunchSettings {
                         arguments = new[] { "-profile={profile}", "-windowed", "-w", "{width}", "-h", "{height}", "+sound_without_focus", "{sound}" },
                         vrArguments = new[] { "+mat_vsync_mode", "0" }

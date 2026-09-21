@@ -15,6 +15,20 @@ namespace BigWalkVRInstaller.Services
         public string modSha256;
         public string osVersion;
         public bool is64BitOperatingSystem;
+        public bool dumpIncluded;
+        public string captureSession;
+        public string capturedModSha256;
+    }
+
+    public sealed class TitanfallCaptureIdentity
+    {
+        public string modSha256;
+    }
+
+    public sealed class TitanfallCrashReport
+    {
+        public string path;
+        public bool dumpIncluded;
     }
 
     public static class CrashReportService
@@ -38,18 +52,35 @@ namespace BigWalkVRInstaller.Services
             return reportPath;
         }
 
-        public static string CreateTitanfall(string gamePath, string outputDirectory = null)
+        public static TitanfallCrashReport CreateTitanfall(string gamePath, string outputDirectory = null)
         {
             var profile = Path.Combine(gamePath, "TF2VR");
             var files = new Dictionary<string, string>();
-            AddNewest(files, Path.Combine(profile, "logs"), "nslog*.txt", "Northstar");
-            AddNewest(files, Path.Combine(profile, "logs"), "nsdump*.dmp", "Northstar");
-
-            var data = Path.Combine(profile, "plugins", "Titanfall2VR-data");
-            foreach (var name in new[] { "engine.txt", "events.txt", "runtime.txt", "frames.csv" })
+            var captures = Path.Combine(profile, "crashes");
+            var sessions = Directory.Exists(captures) ? new DirectoryInfo(captures).GetDirectories() : Array.Empty<DirectoryInfo>();
+            var session = sessions.Where(candidate => File.Exists(Path.Combine(candidate.FullName, "incident.txt")))
+                .OrderByDescending(candidate => candidate.Name, StringComparer.Ordinal).FirstOrDefault();
+            string capturedHash = null;
+            if (session != null)
             {
-                var path = Path.Combine(data, name);
-                if (File.Exists(path)) files["Titanfall2VR/" + name] = path;
+                var names = new HashSet<string> { "session.json", "monitor.txt", "incident.txt", "capture.txt", "process.dmp", "engine.txt", "events.txt", "runtime.txt", "frames.csv", "northstar.txt" };
+                foreach (var file in session.EnumerateFiles("*", SearchOption.AllDirectories).Where(file => names.Contains(file.Name)))
+                    files["Capture/" + file.FullName.Substring(session.FullName.Length + 1).Replace('\\', '/')] = file.FullName;
+                var identity = Path.Combine(session.FullName, "session.json");
+                if (File.Exists(identity)) capturedHash = JsonUtil.Deserialize<TitanfallCaptureIdentity>(File.ReadAllText(identity)).modSha256;
+            }
+            else
+            {
+                AddNewest(files, Path.Combine(profile, "logs"), "nslog*.txt", "Northstar");
+                AddNewest(files, Path.Combine(profile, "logs"), "nsdump*.dmp", "Northstar");
+                var data = Path.Combine(profile, "plugins", "Titanfall2VR-data");
+                foreach (var name in new[] { "engine.txt", "events.txt", "runtime.txt", "frames.csv" })
+                {
+                    var path = Path.Combine(data, name);
+                    if (File.Exists(path)) files["Titanfall2VR/" + name] = path;
+                }
+                var latest = sessions.OrderByDescending(candidate => candidate.Name, StringComparer.Ordinal).FirstOrDefault();
+                if (latest != null) files["Capture/monitor.txt"] = Path.Combine(latest.FullName, "monitor.txt");
             }
             if (files.Count == 0) throw new Exception("No Titanfall 2 VR crash files were found.");
 
@@ -63,7 +94,10 @@ namespace BigWalkVRInstaller.Services
                 northstarVersion = record?.northstarVersion,
                 modSha256 = File.Exists(plugin) ? RepoClient.Sha256(File.ReadAllBytes(plugin)) : null,
                 osVersion = Environment.OSVersion.VersionString,
-                is64BitOperatingSystem = Environment.Is64BitOperatingSystem
+                is64BitOperatingSystem = Environment.Is64BitOperatingSystem,
+                dumpIncluded = files.Keys.Any(name => name.EndsWith(".dmp", StringComparison.OrdinalIgnoreCase)),
+                captureSession = session?.Name,
+                capturedModSha256 = capturedHash
             };
 
             var directory = outputDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
@@ -75,7 +109,7 @@ namespace BigWalkVRInstaller.Services
                 var entry = archive.CreateEntry("report.json", CompressionLevel.Optimal);
                 using (var writer = new StreamWriter(entry.Open())) writer.Write(JsonUtil.Serialize(metadata));
             }
-            return reportPath;
+            return new TitanfallCrashReport { path = reportPath, dumpIncluded = metadata.dumpIncluded };
         }
 
         static string DesktopReportPath(string name) => Path.Combine(

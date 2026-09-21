@@ -822,18 +822,18 @@ namespace BigWalkVRInstaller
         {
             if (!await Confirm(
                 "Create crash report",
-                "Create a ZIP containing the latest Northstar log and minidump plus Titanfall 2 VR diagnostics. Minidumps may contain account, server, device, or memory details. Share it only with support.",
+                "Create a ZIP containing saved crash or freeze diagnostics. Dumps may contain account, server, device, or memory details. Share it only with support.",
                 "Create report",
                 false)) return;
 
             try
             {
                 var report = CrashReportService.CreateTitanfall(_titanfall.GamePath);
-                GameLauncher.SelectFile(report);
-                Status("Crash report created on the Desktop.");
+                GameLauncher.SelectFile(report.path);
+                Status(report.dumpIncluded ? "Crash report created on the Desktop." : "Report saved without a dump.");
                 if (await Confirm(
                     "Crash report ready",
-                    "The ZIP is selected in Explorer. Review where you share it because the minidump contains process memory.",
+                    report.dumpIncluded ? "The ZIP includes process memory. Share it only with support." : "No dump was available. The ZIP contains logs and capture status.",
                     "Open Discord",
                     false)) GameLauncher.OpenUrl(DiscordUrl);
             }

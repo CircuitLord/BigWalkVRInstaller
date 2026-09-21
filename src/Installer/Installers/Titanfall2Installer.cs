@@ -51,6 +51,7 @@ namespace BigWalkVRInstaller.Installers
             && File.Exists(Path.Combine(GamePath, ProfileName, "Northstar.dll"))
             && File.Exists(Path.Combine(GamePath, ProfileName, "plugins", "Titanfall2VR.dll"))
             && File.Exists(Path.Combine(GamePath, ProfileName, "tools", "xr_probe.exe"))
+            && File.Exists(Path.Combine(GamePath, ProfileName, "tools", "crash_monitor.exe"))
             && File.Exists(Path.Combine(GamePath, ProfileName, "tools", "launch.json"));
         public string InstalledVersion => IsInstalled ? Record.version : null;
 
@@ -103,6 +104,8 @@ namespace BigWalkVRInstaller.Installers
                     ?? throw new Exception("Titanfall 2 VR package is missing Titanfall2VR.dll");
                 var probe = modArchive.GetEntry("xr_probe.exe")
                     ?? throw new Exception("Titanfall 2 VR package is missing xr_probe.exe");
+                var monitor = modArchive.GetEntry("crash_monitor.exe")
+                    ?? throw new Exception("VR package is missing crash_monitor.exe");
                 var launch = modArchive.GetEntry("launch.json")
                     ?? throw new Exception("Titanfall 2 VR package is missing launch.json");
 
@@ -114,6 +117,7 @@ namespace BigWalkVRInstaller.Installers
                 }
                 Extract(plugin, ProfileName + "/plugins/Titanfall2VR.dll", written);
                 Extract(probe, ProfileName + "/tools/xr_probe.exe", written);
+                Extract(monitor, ProfileName + "/tools/crash_monitor.exe", written);
                 Extract(launch, ProfileName + "/tools/launch.json", written);
                 foreach (var entry in modArchive.Entries.Where(entry => entry.Name.Length > 0 && entry.FullName.StartsWith("mods/", StringComparison.Ordinal)))
                     Extract(entry, ProfileName + "/" + entry.FullName, written);
@@ -194,8 +198,9 @@ namespace BigWalkVRInstaller.Installers
             var height = views.Max(view => view.height);
             var width = Math.Max(views.Max(view => view.width), (height * 16 + 8) / 9);
             var settings = JsonUtil.Deserialize<TitanfallLaunchSettings>(File.ReadAllText(Path.Combine(gamePath, ProfileName, "tools", "launch.json")));
-            var info = VrProcess(gamePath, Path.Combine(gamePath, LauncherName));
-            info.Arguments = string.Join(" ", settings.arguments.Concat(settings.vrArguments)
+            var info = VrProcess(gamePath, Path.Combine(gamePath, ProfileName, "tools", "crash_monitor.exe"));
+            info.Arguments = "\"" + Path.Combine(gamePath, ProfileName) + "\" \"" + Path.Combine(gamePath, LauncherName) + "\" "
+                + string.Join(" ", settings.arguments.Concat(settings.vrArguments)
                 .Select(arg => arg.Replace("{profile}", ProfileName).Replace("{width}", width.ToString())
                     .Replace("{height}", height.ToString()).Replace("{sound}", "1")));
             return info;
