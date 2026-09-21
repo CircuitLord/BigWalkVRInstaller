@@ -2,6 +2,9 @@ using System;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
+using System.Reflection;
+using System.Threading.Tasks;
+using System.Windows.Controls;
 using BigWalkVRInstaller;
 using BigWalkVRInstaller.Installers;
 using BigWalkVRInstaller.Services;
@@ -10,11 +13,13 @@ namespace InstallerValidation
 {
     static class Program
     {
+        [STAThread]
         static int Main()
         {
             var root = Path.Combine(Path.GetTempPath(), "CircuitLordInstallerValidation-" + Guid.NewGuid().ToString("N"));
             try
             {
+                ValidateSavePrompt(root);
                 Directory.CreateDirectory(Path.Combine(root, "R2Northstar"));
                 File.WriteAllText(Path.Combine(root, "Titanfall2.exe"), "game");
                 File.WriteAllText(Path.Combine(root, "NorthstarLauncher.exe"), "standard-launcher");
@@ -32,6 +37,21 @@ namespace InstallerValidation
                 File.WriteAllText(Path.Combine(profile, "Northstar.dll"), "untracked-profile");
                 File.WriteAllText(Path.Combine(root, "Titanfall2VRLauncher.exe"), "untracked-launcher");
 
+                var documents = Path.Combine(root, "Documents");
+                var defaultProfile = Path.Combine(documents, "Respawn", "Titanfall2", "profile");
+                var saveDirectory = Titanfall2Installer.SaveDirectory(documents);
+                Assert(saveDirectory == Path.Combine(documents, "Respawn", "Titanfall2_VR"), "wrong save directory");
+                var vrProfile = Path.Combine(saveDirectory, "profile");
+                var fnfSave = Path.Combine(documents, "Respawn", "Titanfall2_fnf", "profile", "savegames", "savegame.sav");
+                Directory.CreateDirectory(Path.GetDirectoryName(fnfSave));
+                File.WriteAllText(fnfSave, "other-mod-progress");
+                Assert(!Titanfall2Installer.CanCopyCampaignSave(documents), "offered a missing campaign save");
+                Directory.CreateDirectory(Path.Combine(defaultProfile, "savegames"));
+                File.WriteAllText(Path.Combine(defaultProfile, "savegames", "savegame.sav"), "default-checkpoint");
+                Assert(!Titanfall2Installer.CanCopyCampaignSave(documents), "offered an incomplete campaign profile");
+                File.WriteAllText(Path.Combine(defaultProfile, "profile.cfg"), "campaign-unlocks");
+                Assert(Titanfall2Installer.CanCopyCampaignSave(documents), "default campaign save was not offered");
+
                 var installer = new Titanfall2Installer(new AppSettings { Titanfall2Path = root });
                 var release = new ManifestMod { version = "0.1.0" };
                 installer.Install(NorthstarPackage("vr-launcher-v1", true), release, ModPackage("vr-plugin-v1"), false);
@@ -42,6 +62,19 @@ namespace InstallerValidation
                 Assert(File.ReadAllText(Path.Combine(root, "TF2VR", "Northstar.dll")) == "vr-profile", "VR profile missing");
                 Assert(File.ReadAllText(Path.Combine(root, "TF2VR", "plugins", "Titanfall2VR.dll")) == "vr-plugin-v1", "VR plugin missing");
                 Assert(File.ReadAllText(userFile) == "user-data", "untracked user file changed during adoption");
+
+                Assert(!Directory.Exists(vrProfile), "install copied campaign progress without consent");
+                Titanfall2Installer.CopyCampaignSave(documents);
+                Assert(File.ReadAllText(Path.Combine(vrProfile, "savegames", "savegame.sav")) == "default-checkpoint", "checkpoint was not copied");
+                Assert(File.ReadAllText(Path.Combine(vrProfile, "profile.cfg")) == "campaign-unlocks", "campaign unlocks were not copied");
+                Assert(!Titanfall2Installer.CanCopyCampaignSave(documents), "offered to replace existing VR progress");
+                File.WriteAllText(Path.Combine(vrProfile, "savegames", "savegame.sav"), "vr-progress");
+                var refusedOverwrite = false;
+                try { Titanfall2Installer.CopyCampaignSave(documents); }
+                catch (InvalidOperationException) { refusedOverwrite = true; }
+                Assert(refusedOverwrite, "existing VR progress was overwritten");
+                Assert(File.ReadAllText(Path.Combine(defaultProfile, "savegames", "savegame.sav")) == "default-checkpoint", "default checkpoint changed");
+                Assert(File.ReadAllText(Path.Combine(defaultProfile, "profile.cfg")) == "campaign-unlocks", "default profile changed");
 
                 Assert(installer.IsInstalled, "complete VR package was not recognized");
                 Assert(File.ReadAllText(Path.Combine(root, "TF2VR", "tools", "xr_probe.exe")) == "probe", "resolution probe missing");
@@ -65,6 +98,7 @@ namespace InstallerValidation
                 Assert(!File.Exists(Path.Combine(root, "TF2VR", "plugins", "ranim.dll")), "stale owned file survived update");
                 Assert(File.ReadAllText(userFile) == "user-data", "user file changed during update");
                 Assert(installer.Record.beta, "beta channel was not recorded");
+                Assert(File.ReadAllText(Path.Combine(vrProfile, "savegames", "savegame.sav")) == "vr-progress", "update changed VR progress");
 
                 var logs = Path.Combine(root, "TF2VR", "logs");
                 var diagnostics = Path.Combine(root, "TF2VR", "plugins", "Titanfall2VR-data");
@@ -89,6 +123,7 @@ namespace InstallerValidation
                 Assert(!File.Exists(Path.Combine(root, "TF2VR", "tools", "xr_probe.exe")), "probe survived uninstall");
                 Assert(!File.Exists(Path.Combine(root, "TF2VR", "mods", "Titanfall2VR.Cockpit", "mod.json")), "cockpit survived uninstall");
                 Assert(File.ReadAllText(userFile) == "user-data", "user file changed during uninstall");
+                Assert(File.ReadAllText(Path.Combine(vrProfile, "savegames", "savegame.sav")) == "vr-progress", "uninstall changed VR progress");
                 Assert(File.ReadAllText(Path.Combine(root, "NorthstarLauncher.exe")) == "standard-launcher", "standard launcher changed after uninstall");
                 Assert(File.ReadAllText(Path.Combine(root, "R2Northstar", "Northstar.dll")) == "standard-profile", "standard profile changed after uninstall");
 
@@ -97,7 +132,10 @@ namespace InstallerValidation
                 Assert(File.ReadAllText(Path.Combine(root, "TF2VR", "plugins", "Titanfall2VR.dll")) == "vr-plugin-v3", "reinstalled VR plugin missing");
                 Assert(File.ReadAllText(userFile) == "user-data", "user file changed during reinstall");
 
-                Console.WriteLine("validated TF2VR install, beta updates, crash reports, uninstall, reinstall, and profile switching");
+                Assert(!Titanfall2Installer.CanCopyCampaignSave(documents), "reinstall offered to replace VR progress");
+                Assert(File.ReadAllText(fnfSave) == "other-mod-progress", "FNF campaign progress changed");
+                Assert(File.ReadAllText(Path.Combine(vrProfile, "savegames", "savegame.sav")) == "vr-progress", "reinstall changed campaign progress");
+                Console.WriteLine("validated TF2VR install, save import consent, save isolation, updates, crash reports, uninstall, and reinstall");
                 return 0;
             }
             catch (Exception ex)
@@ -109,6 +147,111 @@ namespace InstallerValidation
             {
                 if (Directory.Exists(root)) Directory.Delete(root, true);
             }
+        }
+
+        static void ValidateSavePrompt(string root)
+        {
+            var app = new App();
+            app.InitializeComponent();
+            var window = new MainWindow();
+            Assert((string)((Button)window.FindName("TitanfallSavesButton")).Content == "Campaign saves", "saves modal button missing");
+            Assert((string)((Button)window.FindName("TitanfallSaveDirectoryButton")).Content == "Open folder", "save folder label changed");
+            Assert((string)((Button)window.FindName("TitanfallCopySaveButton")).Content == "Import", "import label changed");
+            Assert(((TextBlock)window.FindName("TitanfallSaveNotice")).Text == "Launches from this installer share a separate save directory.", "save notice should describe installer launches");
+            var confirm = typeof(MainWindow).GetMethod("Confirm", BindingFlags.Instance | BindingFlags.NonPublic);
+            var close = typeof(MainWindow).GetMethod("CloseConfirm", BindingFlags.Instance | BindingFlags.NonPublic);
+            foreach (var answer in new[] { false, true })
+            {
+                var result = (Task<bool>)confirm.Invoke(window, new object[] { "Copy your existing campaign save?", "Launching from this installer uses a new save directory\n\nPress Yes if you'd like to copy your existing save file as a starting point.", "Yes", false, "No" });
+                Assert((string)((Button)window.FindName("ConfirmOk")).Content == "Yes", "save prompt has no Yes choice");
+                Assert((string)((Button)window.FindName("ConfirmCancel")).Content == "No", "save prompt has no No choice");
+                close.Invoke(window, new object[] { answer });
+                Assert(result.Result == answer, "save prompt returned the wrong choice");
+            }
+            confirm.Invoke(window, new object[] { "Uninstall", "Remove files", "Uninstall", true, "Cancel" });
+            Assert((string)((Button)window.FindName("ConfirmCancel")).Content == "Cancel", "save prompt changed other dialogs");
+            close.Invoke(window, new object[] { false });
+            ValidateSaveManagement(window, Path.Combine(root, "save-dialog"));
+            window.Close();
+        }
+
+        static void ValidateSaveManagement(MainWindow window, string documents)
+        {
+            var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            var show = typeof(MainWindow).GetMethod("ShowTitanfallSaves", flags);
+            var copy = typeof(MainWindow).GetMethod("CopyTitanfallSave", flags);
+            var confirm = typeof(MainWindow).GetMethod("CloseConfirm", flags);
+            var overlay = (Border)window.FindName("TitanfallSavesOverlay");
+            var baseStatus = (TextBlock)window.FindName("TitanfallBaseSaveStatus");
+            var vrStatus = (TextBlock)window.FindName("TitanfallVrSaveStatus");
+            var copyButton = (Button)window.FindName("TitanfallCopySaveButton");
+            var source = Path.Combine(Titanfall2Installer.BaseSaveDirectory(documents), "profile");
+            var destination = Path.Combine(Titanfall2Installer.SaveDirectory(documents), "profile");
+            show.Invoke(window, new object[] { documents });
+            Assert(overlay.Visibility == System.Windows.Visibility.Visible, "saves modal did not open");
+            Assert(((TextBlock)window.FindName("TitanfallSaveMessage")).Visibility == System.Windows.Visibility.Collapsed, "empty save message left a gap");
+            Assert(!((Grid)window.FindName("InstallerView")).IsEnabled, "saves modal left launch controls enabled");
+            Assert(baseStatus.Text == "No save" && vrStatus.Text == "No save", "missing save status incorrect");
+            Assert(!copyButton.IsEnabled, "copy enabled without a source save");
+            Assert(((TextBlock)window.FindName("TitanfallSaveHelp")).Text == "Import needs a complete base game save.", "disabled import was not explained");
+            var rejected = false;
+            try { Titanfall2Installer.CopyCampaignSave(documents, overwrite: true); }
+            catch (InvalidOperationException) { rejected = true; }
+            Assert(rejected && !Directory.Exists(destination), "missing source created a destination save");
+
+            Directory.CreateDirectory(Path.Combine(source, "savegames"));
+            File.WriteAllText(Path.Combine(source, "savegames", "savegame.sav"), "base-checkpoint");
+            show.Invoke(window, new object[] { documents });
+            Assert(baseStatus.Text == "Incomplete save" && !copyButton.IsEnabled, "incomplete source allowed copying");
+            File.WriteAllText(Path.Combine(source, "profile.cfg"), "base-unlocks");
+            show.Invoke(window, new object[] { documents });
+            Assert(baseStatus.Text == "Save found" && copyButton.IsEnabled, "complete source was not available");
+            Assert(((TextBlock)window.FindName("TitanfallSaveHelp")).Text == "Import your base game progress into the VR save.", "import direction was not explained");
+            foreach (var answer in new[] { false, true })
+            {
+                var task = (Task)copy.Invoke(window, new object[] { documents });
+                Assert(!task.IsCompleted, "initial import did not wait for confirmation");
+                Assert(((TextBlock)window.FindName("ConfirmTitle")).Text == "Import base game save?", "initial import confirmation missing");
+                Assert((string)((Button)window.FindName("ConfirmOk")).Content == "Import", "initial import action unclear");
+                Assert(!Directory.Exists(destination), "initial import wrote before confirmation");
+                confirm.Invoke(window, new object[] { answer });
+                task.GetAwaiter().GetResult();
+                Assert(Directory.Exists(destination) == answer, "initial import ignored consent");
+            }
+            Assert(vrStatus.Text == "Save found", "status did not refresh after copy");
+            Assert(((TextBlock)window.FindName("TitanfallSaveMessage")).Visibility == System.Windows.Visibility.Visible, "copy result was hidden");
+            Assert(File.ReadAllText(Path.Combine(destination, "savegames", "savegame.sav")) == "base-checkpoint", "initial modal copy failed");
+
+            foreach (var partial in new[] { false, true })
+            {
+                File.WriteAllText(Path.Combine(destination, "profile.cfg"), "vr-unlocks");
+                if (partial) File.Delete(Path.Combine(destination, "savegames", "savegame.sav"));
+                else File.WriteAllText(Path.Combine(destination, "savegames", "savegame.sav"), "vr-checkpoint");
+                show.Invoke(window, new object[] { documents });
+                Assert(vrStatus.Text == (partial ? "Incomplete save" : "Save found"), "destination status incorrect");
+                Assert(!Titanfall2Installer.CanCopyCampaignSave(documents), "install import allowed an existing destination");
+                foreach (var answer in new[] { false, true })
+                {
+                    var task = (Task)copy.Invoke(window, new object[] { documents });
+                    Assert(!task.IsCompleted, "overwrite did not wait for confirmation");
+                    Assert(((TextBlock)window.FindName("ConfirmTitle")).Text == "Overwrite VR save?", "overwrite warning missing");
+                    Assert((string)((Button)window.FindName("ConfirmOk")).Content == "Overwrite", "overwrite action unclear");
+                    Assert(File.ReadAllText(Path.Combine(destination, "profile.cfg")) == "vr-unlocks", "save changed before confirmation");
+                    confirm.Invoke(window, new object[] { answer });
+                    task.GetAwaiter().GetResult();
+                    Assert(File.ReadAllText(Path.Combine(destination, "profile.cfg")) == (answer ? "base-unlocks" : "vr-unlocks"), "overwrite consent ignored");
+                    var save = Path.Combine(destination, "savegames", "savegame.sav");
+                    if (answer) Assert(File.ReadAllText(save) == "base-checkpoint", "confirmed overwrite did not copy the checkpoint");
+                    else if (partial) Assert(!File.Exists(save), "cancel created a checkpoint");
+                    else Assert(File.ReadAllText(save) == "vr-checkpoint", "cancel changed the checkpoint");
+                }
+            }
+            Assert(File.ReadAllText(Path.Combine(source, "profile.cfg")) == "base-unlocks", "copy changed base progress");
+            Assert(File.ReadAllText(Path.Combine(source, "savegames", "savegame.sav")) == "base-checkpoint", "copy changed the base checkpoint");
+            Assert(vrStatus.Text == "Save found", "overwrite left stale status");
+            ((Button)window.FindName("TitanfallSavesCloseButton")).RaiseEvent(new System.Windows.RoutedEventArgs(Button.ClickEvent));
+            Assert(overlay.Visibility == System.Windows.Visibility.Collapsed, "saves modal did not close");
+            Assert(((Grid)window.FindName("InstallerView")).IsEnabled, "closing saves modal left launch controls disabled");
         }
 
         static byte[] NorthstarPackage(string launcher, bool includeRanim)

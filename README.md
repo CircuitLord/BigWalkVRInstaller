@@ -28,6 +28,10 @@ Your non-vr friends can install the mod and still play in flatscreen!
 
 Launching Big Walk normally through Steam stays non-VR while showing VR players' tracked movement. To play in VR, start SteamVR and use the installer's Launch in VR button.
 
+## Titanfall 2 campaign saves
+
+Titanfall 2 launches from this installer share `Documents\Respawn\Titanfall2_VR` for saves and settings. Regular game launches use `Documents\Respawn\Titanfall2`. During installation, choose **Yes** to copy your default checkpoint and campaign profile, or **No** to start fresh. Installation, updates, and uninstall preserve existing progress. The copy prompt appears only when the default campaign profile exists and the dedicated profile files are absent. **Campaign saves** shows the base game and VR save status, opens the dedicated folder, and copies base game progress. Replacing existing VR progress requires confirmation. Close the game before copying.
+
 ## Building from source
 
 Needs the .NET Framework 4.8 SDK.

@@ -20,6 +20,8 @@ namespace BigWalkVRInstaller.Installers
         public int height;
     }
 
+    public enum CampaignSaveStatus { Missing, Incomplete, Available }
+
     public sealed class Titanfall2Installer : IVrModInstaller
     {
         public const string InstallerId = "Titanfall2VR";
@@ -32,6 +34,8 @@ namespace BigWalkVRInstaller.Installers
 
         static readonly SteamGameLocator Locator = new SteamGameLocator(
             "Titanfall2", "Titanfall2.exe", @"SOFTWARE\Respawn\Titanfall2", "Install Dir");
+
+        static readonly string[] CampaignFiles = { "profile.cfg", "savegames/savegame.sav" };
 
         readonly AppSettings _settings;
 
@@ -136,6 +140,36 @@ namespace BigWalkVRInstaller.Installers
             written.Add(normalized);
         }
 
+        public static string SaveDirectory(string documentsPath) => Path.Combine(documentsPath, "Respawn", "Titanfall2_VR");
+        public static string BaseSaveDirectory(string documentsPath) => Path.Combine(documentsPath, "Respawn", "Titanfall2");
+
+        public static CampaignSaveStatus GetCampaignSaveStatus(string directory)
+        {
+            var count = CampaignFiles.Count(name => File.Exists(Path.Combine(directory, "profile", name)));
+            return count == 0 ? CampaignSaveStatus.Missing : count == CampaignFiles.Length ? CampaignSaveStatus.Available : CampaignSaveStatus.Incomplete;
+        }
+
+        public static bool CanCopyCampaignSave(string documentsPath) =>
+            GetCampaignSaveStatus(BaseSaveDirectory(documentsPath)) == CampaignSaveStatus.Available
+            && GetCampaignSaveStatus(SaveDirectory(documentsPath)) == CampaignSaveStatus.Missing;
+
+        public static void CopyCampaignSave(string documentsPath, bool overwrite = false)
+        {
+            if (Process.GetProcessesByName("Titanfall2").Any()) throw new InvalidOperationException("Close Titanfall 2 before copying saves.");
+            if (GetCampaignSaveStatus(BaseSaveDirectory(documentsPath)) != CampaignSaveStatus.Available)
+                throw new InvalidOperationException("No complete base game save to copy.");
+            if (!overwrite && GetCampaignSaveStatus(SaveDirectory(documentsPath)) != CampaignSaveStatus.Missing)
+                throw new InvalidOperationException("Copying would overwrite existing campaign progress.");
+            var source = Path.Combine(BaseSaveDirectory(documentsPath), "profile");
+            var destination = Path.Combine(SaveDirectory(documentsPath), "profile");
+            foreach (var name in CampaignFiles)
+            {
+                var target = Path.Combine(destination, name);
+                Directory.CreateDirectory(Path.GetDirectoryName(target));
+                File.Copy(Path.Combine(source, name), target, overwrite);
+            }
+        }
+
         public void Uninstall() => OwnedFileStore.Remove(GamePath, InstallerId);
 
         static ProcessStartInfo VrProcess(string gamePath, string executable)
@@ -161,9 +195,9 @@ namespace BigWalkVRInstaller.Installers
             var width = Math.Max(views.Max(view => view.width), (height * 16 + 8) / 9);
             var settings = JsonUtil.Deserialize<TitanfallLaunchSettings>(File.ReadAllText(Path.Combine(gamePath, ProfileName, "tools", "launch.json")));
             var info = VrProcess(gamePath, Path.Combine(gamePath, LauncherName));
-            info.Arguments = string.Join(" ", settings.arguments.Select(arg => arg.Replace("{profile}", ProfileName)
-                .Replace("{width}", width.ToString()).Replace("{height}", height.ToString()).Replace("{sound}", "1"))
-                .Concat(settings.vrArguments));
+            info.Arguments = string.Join(" ", settings.arguments.Concat(settings.vrArguments)
+                .Select(arg => arg.Replace("{profile}", ProfileName).Replace("{width}", width.ToString())
+                    .Replace("{height}", height.ToString()).Replace("{sound}", "1")));
             return info;
         }
 

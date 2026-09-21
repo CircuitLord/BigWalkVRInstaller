@@ -309,6 +309,7 @@ namespace BigWalkVRInstaller
             RefreshButton.IsEnabled = !_titanfallBusy;
             LaunchButton.IsEnabled = installed && !_titanfallBusy;
             TitanfallCrashReportButton.IsEnabled = hasGame;
+            TitanfallSavesButton.IsEnabled = !_titanfallBusy;
             LaunchButton.ToolTip = installed ? "Launch Titanfall 2 VR" : "Install Titanfall 2 VR first";
             SelectedGameStatus.Text = installed ? update ? "Update available" : "Ready to play" : hasGame ? "Setup required" : "Game not found";
         }
@@ -484,6 +485,11 @@ namespace BigWalkVRInstaller
             RefreshTitanfallState();
             try
             {
+                var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                var copySave = Titanfall2Installer.CanCopyCampaignSave(documents) && await Confirm(
+                    "Copy your existing campaign save?",
+                    "Launching from this installer uses a new save directory\n\nPress Yes if you'd like to copy your existing save file as a starting point.",
+                    "Yes", danger: false, cancelLabel: "No");
                 Status("Downloading Northstar...");
                 var northstarProgress = new Progress<double>(value =>
                 {
@@ -503,7 +509,11 @@ namespace BigWalkVRInstaller
 
                 TitanfallProgressText.Text = "Installing isolated Northstar profile...";
                 TitanfallProgress.Value = 1;
-                await Task.Run(() => _titanfall.Install(northstar, _titanfallRelease, mod, _titanfallIsBeta));
+                await Task.Run(() =>
+                {
+                    _titanfall.Install(northstar, _titanfallRelease, mod, _titanfallIsBeta);
+                    if (copySave) Titanfall2Installer.CopyCampaignSave(documents);
+                });
                 Status($"Titanfall 2 VR v{_titanfallRelease.version} installed");
             }
             catch (Exception ex)
@@ -694,6 +704,80 @@ namespace BigWalkVRInstaller
         void OpenGameFolder_Click(object sender, RoutedEventArgs e) => Open(() =>
             GameLauncher.OpenFolder(_selectedGame == SelectedGame.Titanfall2 ? _titanfall.GamePath : _bigWalk.GamePath));
 
+        void TitanfallSaves_Click(object sender, RoutedEventArgs e) =>
+            ShowTitanfallSaves(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+
+        void ShowTitanfallSaves(string documents)
+        {
+            RefreshTitanfallSaves(documents);
+            TitanfallSaveMessage.Text = "";
+            InstallerView.IsEnabled = false;
+            TitanfallSavesOverlay.Visibility = Visibility.Visible;
+            TitanfallSavesCloseButton.Focus();
+        }
+
+        void CloseTitanfallSaves_Click(object sender, RoutedEventArgs e)
+        {
+            TitanfallSavesOverlay.Visibility = Visibility.Collapsed;
+            InstallerView.IsEnabled = true;
+            TitanfallSavesButton.Focus();
+        }
+
+        void RefreshTitanfallSaves(string documents)
+        {
+            var baseSave = Titanfall2Installer.GetCampaignSaveStatus(Titanfall2Installer.BaseSaveDirectory(documents));
+            var vrSave = Titanfall2Installer.GetCampaignSaveStatus(Titanfall2Installer.SaveDirectory(documents));
+            TitanfallBaseSaveStatus.Text = SaveStatusText(baseSave);
+            TitanfallVrSaveStatus.Text = SaveStatusText(vrSave);
+            TitanfallCopySaveButton.IsEnabled = baseSave == CampaignSaveStatus.Available;
+            TitanfallSaveHelp.Text = baseSave == CampaignSaveStatus.Available
+                ? "Import your base game progress into the VR save."
+                : "Import needs a complete base game save.";
+        }
+
+        static string SaveStatusText(CampaignSaveStatus status) =>
+            status == CampaignSaveStatus.Available ? "Save found" : status == CampaignSaveStatus.Missing ? "No save" : "Incomplete save";
+
+        async void CopyTitanfallSave_Click(object sender, RoutedEventArgs e) =>
+            await CopyTitanfallSave(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+
+        async Task CopyTitanfallSave(string documents)
+        {
+            TitanfallSaveMessage.Text = "";
+            var overwrite = Titanfall2Installer.GetCampaignSaveStatus(Titanfall2Installer.SaveDirectory(documents)) != CampaignSaveStatus.Missing;
+            var confirmation = Confirm(
+                overwrite ? "Overwrite VR save?" : "Import base game save?",
+                overwrite ? "The VR save and its progress will be replaced by the base game save. This cannot be undone."
+                    : "The base game save will be copied into the VR save.",
+                overwrite ? "Overwrite" : "Import", danger: overwrite);
+            ConfirmCancel.Focus();
+            if (!await confirmation)
+            {
+                TitanfallSavesCloseButton.Focus();
+                return;
+            }
+            try
+            {
+                Titanfall2Installer.CopyCampaignSave(documents, overwrite);
+                TitanfallSaveMessage.Text = "Campaign save copied.";
+                TitanfallSaveMessage.Foreground = Brush("Green");
+            }
+            catch (Exception ex)
+            {
+                TitanfallSaveMessage.Text = ex.Message;
+                TitanfallSaveMessage.Foreground = Brush("Red");
+            }
+            RefreshTitanfallSaves(documents);
+            TitanfallSavesCloseButton.Focus();
+        }
+
+        void OpenTitanfallSaves_Click(object sender, RoutedEventArgs e) => Open(() =>
+        {
+            var path = Titanfall2Installer.SaveDirectory(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+            Directory.CreateDirectory(path);
+            GameLauncher.OpenFolder(path);
+        });
+
         void OpenModLogs_Click(object sender, RoutedEventArgs e) => Open(() =>
         {
             var log = Path.Combine(_bigWalk.GamePath, "BepInEx", "LogOutput.log");
@@ -793,12 +877,13 @@ namespace BigWalkVRInstaller
 
         TaskCompletionSource<bool> _confirm;
 
-        Task<bool> Confirm(string title, string text, string okLabel, bool danger = true)
+        Task<bool> Confirm(string title, string text, string okLabel, bool danger = true, string cancelLabel = "Cancel")
         {
             if (_confirm != null) return Task.FromResult(false);
             ConfirmTitle.Text = title;
             ConfirmText.Text = text;
             ConfirmOk.Content = okLabel;
+            ConfirmCancel.Content = cancelLabel;
             ConfirmOk.Style = (Style)FindResource(danger ? "Danger" : "Primary");
             ConfirmOverlay.Visibility = Visibility.Visible;
             _confirm = new TaskCompletionSource<bool>();
@@ -822,6 +907,12 @@ namespace BigWalkVRInstaller
             if (_confirm != null)
             {
                 CloseConfirm(false);
+                e.Handled = true;
+                return;
+            }
+            if (TitanfallSavesOverlay.Visibility == Visibility.Visible)
+            {
+                CloseTitanfallSaves_Click(sender, e);
                 e.Handled = true;
                 return;
             }
