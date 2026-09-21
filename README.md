@@ -72,4 +72,6 @@ MIT, see [LICENSE](LICENSE). Third-party software details are in [THIRD-PARTY-NO
 
 ## Supporting
 
-If you've enjoyed something I've made, and want to support my work, see my ko-fi! https://ko-fi.com/circuitlord 
+If you've enjoyed something I've made, and want to support my work, see my ko-fi!
+
+https://ko-fi.com/circuitlord 
