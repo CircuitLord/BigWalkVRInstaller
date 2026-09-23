@@ -85,7 +85,7 @@ namespace InstallerValidation
                 });
                 Assert(launch.FileName == Path.Combine(root, "TF2VR", "tools", "crash_monitor.exe"), "launch bypassed crash capture");
                 Assert(launch.Arguments == "\"" + profile + "\" \"" + Path.Combine(root, "Titanfall2VRLauncher.exe")
-                    + "\" -profile=TF2VR -windowed -w 3912 -h 2200 +sound_without_focus 1 +mat_vsync_mode 0", "wrong monitored launch arguments");
+                    + "\" -profile=TF2VR -windowed -w 2100 -h 2200 +sound_without_focus 1 +mat_vsync_mode 0", "wrong monitored launch arguments");
                 Assert(launch.EnvironmentVariables["TF2VR_OPENXR"] == "1", "OpenXR was not enabled");
                 Assert(!launch.EnvironmentVariables.ContainsKey("TF2VR_DEV_SESSION"), "development session inherited");
                 Assert(!launch.EnvironmentVariables.ContainsKey("XR_RUNTIME_JSON"), "runtime override inherited");

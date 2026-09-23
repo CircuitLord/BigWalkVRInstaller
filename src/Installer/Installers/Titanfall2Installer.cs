@@ -196,7 +196,8 @@ namespace BigWalkVRInstaller.Installers
             if (views.Length != 2 || views.Any(view => view.width <= 0 || view.height <= 0))
                 throw new Exception("OpenXR must provide two valid eye resolutions");
             var height = views.Max(view => view.height);
-            var width = Math.Max(views.Max(view => view.width), (height * 16 + 8) / 9);
+            // eye sized buffers, the mod lays out native UI in their 16:9 corner
+            var width = views.Max(view => view.width);
             var settings = JsonUtil.Deserialize<TitanfallLaunchSettings>(File.ReadAllText(Path.Combine(gamePath, ProfileName, "tools", "launch.json")));
             var info = VrProcess(gamePath, Path.Combine(gamePath, ProfileName, "tools", "crash_monitor.exe"));
             info.Arguments = "\"" + Path.Combine(gamePath, ProfileName) + "\" \"" + Path.Combine(gamePath, LauncherName) + "\" "
