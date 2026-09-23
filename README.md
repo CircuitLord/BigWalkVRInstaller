@@ -6,7 +6,7 @@
 
 ### Notes On Titanfall 2 VR:
 
-> This installer will be used for my Titanfall 2 VR mod, and people kept finding the early version of it in here so I took it down for now. It'll be ready when it's ready in a few days, please be patient. It's the kind of game you can only experience once so you're only going to ruin it for yourself. Join the discord below for updates!
+> This installer will be used for my Titanfall 2 VR mod, and people kept finding the early version of it in here so I took it down for now. It'll be ready when it's ready in a few days, please be patient. It's the kind of game you can only experience once so playing an early version is just gonna ruin it for yourself. Join the discord below for updates!
 
 ### Join the [Discord](https://discord.gg/MTKwud2cCP) if you have questions or feedback!
 
