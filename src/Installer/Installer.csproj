@@ -8,7 +8,7 @@
     <LangVersion>latest</LangVersion>
     <AssemblyName>CircuitLordsVRModsInstaller</AssemblyName>
     <RootNamespace>BigWalkVRInstaller</RootNamespace>
-    <Version>1.1.7</Version>
+    <Version>1.1.8</Version>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
   </PropertyGroup>
