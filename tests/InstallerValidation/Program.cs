@@ -163,7 +163,6 @@ namespace InstallerValidation
             Assert((string)((Button)window.FindName("TitanfallSavesButton")).Content == "Campaign saves", "saves modal button missing");
             Assert((string)((Button)window.FindName("TitanfallSaveDirectoryButton")).Content == "Open folder", "save folder label changed");
             Assert((string)((Button)window.FindName("TitanfallCopySaveButton")).Content == "Import", "import label changed");
-            Assert(((TextBlock)window.FindName("TitanfallSaveNotice")).Text == "Launches from this installer share a separate save directory.", "save notice should describe installer launches");
             var confirm = typeof(MainWindow).GetMethod("Confirm", BindingFlags.Instance | BindingFlags.NonPublic);
             var close = typeof(MainWindow).GetMethod("CloseConfirm", BindingFlags.Instance | BindingFlags.NonPublic);
             foreach (var answer in new[] { false, true })

@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:BigWalkVRInstaller">
 
     <BooleanToVisibilityConverter x:Key="BoolToVis" />
 
@@ -40,6 +41,7 @@
     <SolidColorBrush x:Key="Green" Color="{StaticResource GreenColor}" />
     <SolidColorBrush x:Key="GreenFill" Color="{StaticResource GreenColor}" Opacity="0.12" />
     <SolidColorBrush x:Key="GreenFillBorder" Color="{StaticResource GreenColor}" Opacity="0.3" />
+    <SolidColorBrush x:Key="SplitDivider" Color="{StaticResource TextOnFillColor}" Opacity="0.25" />
     <SolidColorBrush x:Key="Amber" Color="{StaticResource AmberColor}" />
     <SolidColorBrush x:Key="AmberHover" Color="{StaticResource AmberHoverColor}" />
     <SolidColorBrush x:Key="AmberFill" Color="{StaticResource AmberColor}" Opacity="0.12" />
@@ -82,7 +84,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding local:Corners.Radius}" Padding="{TemplateBinding Padding}">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -128,7 +130,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding local:Corners.Radius}" Padding="{TemplateBinding Padding}">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -364,36 +366,29 @@
         </Setter>
     </Style>
 
-    <!-- compact settings toggle -->
-    <Style x:Key="ToggleSwitch" TargetType="CheckBox">
-        <Setter Property="Foreground" Value="{StaticResource Text}" />
-        <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
+    <!-- right segment of a split install action, opens the stable and beta choice, colors follow the action -->
+    <Style x:Key="ChannelsButton" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource Accent}" />
+        <Setter Property="Foreground" Value="{StaticResource TextOnFill}" />
+        <Setter Property="BorderBrush" Value="{StaticResource SplitDivider}" />
+        <Setter Property="BorderThickness" Value="1,0,0,0" />
         <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource KeyboardFocus}" />
+        <Setter Property="ToolTip" Value="Choose stable or beta" />
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="CheckBox">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <Border x:Name="track" Width="32" Height="18" CornerRadius="9"
-                                Background="{StaticResource Hover}" BorderBrush="{StaticResource Stroke}"
-                                BorderThickness="1" VerticalAlignment="Center">
-                            <Ellipse x:Name="thumb" Width="12" Height="12" Fill="{StaticResource TextDim}"
-                                     HorizontalAlignment="Left" Margin="2" />
-                        </Border>
-                        <ContentPresenter Grid.Column="1" Margin="9,0,0,0" VerticalAlignment="Center" />
-                    </Grid>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="0,6,6,0">
+                        <Grid>
+                            <Border x:Name="hover" Background="White" Opacity="0" CornerRadius="0,6,6,0" />
+                            <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" FontSize="10" Margin="9,0"
+                                       Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="track" Property="Background" Value="{StaticResource AmberFill}" />
-                            <Setter TargetName="track" Property="BorderBrush" Value="{StaticResource Amber}" />
-                            <Setter TargetName="thumb" Property="Fill" Value="{StaticResource Amber}" />
-                            <Setter TargetName="thumb" Property="HorizontalAlignment" Value="Right" />
-                        </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="track" Property="BorderBrush" Value="{StaticResource TextDim}" />
+                            <Setter TargetName="hover" Property="Opacity" Value="0.12" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.4" />
@@ -402,6 +397,63 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <Style x:Key="ChannelsUpdate" TargetType="Button" BasedOn="{StaticResource ChannelsButton}">
+        <Setter Property="Background" Value="{StaticResource Amber}" />
+    </Style>
+
+    <!-- joins the green Installed chip, whose right border is the divider -->
+    <Style x:Key="ChannelsInstalled" TargetType="Button" BasedOn="{StaticResource ChannelsButton}">
+        <Setter Property="Background" Value="{StaticResource GreenFill}" />
+        <Setter Property="Foreground" Value="{StaticResource Green}" />
+        <Setter Property="BorderBrush" Value="{StaticResource GreenFillBorder}" />
+        <Setter Property="BorderThickness" Value="0,1,1,1" />
+    </Style>
+
+    <Style x:Key="ChannelMenu" TargetType="ContextMenu">
+        <Setter Property="MinWidth" Value="230" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContextMenu">
+                    <Border Background="{StaticResource Hover}" BorderBrush="{StaticResource Stroke}" BorderThickness="1"
+                            CornerRadius="8" Padding="4" Margin="0,4,0,0">
+                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Resources>
+            <Style TargetType="MenuItem">
+                <Setter Property="Foreground" Value="{StaticResource Text}" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="MenuItem">
+                            <Border x:Name="bd" Background="Transparent" CornerRadius="6" Padding="10,7,14,7">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="check" Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" FontSize="10" Width="12"
+                                               Foreground="{StaticResource Accent}" Margin="0,4,10,0" VerticalAlignment="Top" Visibility="Hidden" />
+                                    <ContentPresenter Grid.Column="1" ContentSource="Header" />
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="check" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                                <Trigger Property="IsHighlighted" Value="True">
+                                    <Setter TargetName="bd" Property="Background" Value="{StaticResource Panel}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </Style.Resources>
     </Style>
 
     <!-- panel card, no hover -->

@@ -5,6 +5,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using BigWalkVRInstaller.Services;
+using Microsoft.Win32;
 
 namespace BigWalkVRInstaller.Installers
 {
@@ -31,6 +32,7 @@ namespace BigWalkVRInstaller.Installers
         public const long NorthstarSize = 107146100;
         public const string LauncherName = "Titanfall2VRLauncher.exe";
         public const string ProfileName = "TF2VR";
+        public const string SteamAppId = "1237970";
 
         static readonly SteamGameLocator Locator = new SteamGameLocator(
             "Titanfall2", "Titanfall2.exe", @"SOFTWARE\Respawn\Titanfall2", "Install Dir");
@@ -226,6 +228,16 @@ namespace BigWalkVRInstaller.Installers
             var views = JsonUtil.Deserialize<OpenXrView[]>(File.ReadAllText(viewsPath));
             Process.Start(CreateLaunchInfo(GamePath, views));
         }
+
+        // same key OriginSDK and Northstar use to start the EA app
+        public static string EaAppPath() =>
+            SteamGameLocator.RegistryValue(Registry.LocalMachine, @"SOFTWARE\WOW6432Node\Origin", "ClientPath");
+
+        // opens visibly so sign in happens on the desktop, Northstar starts it minimized
+        public static void OpenEaApp() => Process.Start(EaAppPath());
+
+        // steam installs the EA app and links the account on first launch
+        public static void LaunchFromSteam() => Process.Start(SteamGameLocator.SteamExePath(), "-applaunch " + SteamAppId);
 
         public static bool IsRunning() =>
             Process.GetProcessesByName("Titanfall2").Any() || Process.GetProcessesByName("Titanfall2VRLauncher").Any();

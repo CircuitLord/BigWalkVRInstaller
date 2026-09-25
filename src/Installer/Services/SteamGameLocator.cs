@@ -78,7 +78,7 @@ namespace BigWalkVRInstaller.Services
             return Directory.Exists(fallback) ? fallback : null;
         }
 
-        static string RegistryValue(RegistryKey hive, string subKey, string name)
+        public static string RegistryValue(RegistryKey hive, string subKey, string name)
         {
             try
             {

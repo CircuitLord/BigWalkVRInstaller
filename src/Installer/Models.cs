@@ -50,8 +50,6 @@ namespace BigWalkVRInstaller
         public string sha256;
         public long size;
         public ModRelease beta;
-        // the headline mod, everything else lists as an optional add-on
-        public bool core;
         // files kept if they already exist, user calibration and configs
         public List<string> preserve = new List<string>();
         // files with {{GAMEDIR}} / {{GAMEDIR_JSON}} placeholders filled in on install
@@ -72,7 +70,6 @@ namespace BigWalkVRInstaller
                 url = beta.url,
                 sha256 = beta.sha256,
                 size = beta.size,
-                core = core,
                 preserve = preserve,
                 tokenize = tokenize
             };
@@ -100,6 +97,8 @@ namespace BigWalkVRInstaller
 
     public class ModEntry : ObservableObject
     {
+        // manifest entry with both channels, Remote is the selected one
+        public ManifestMod Available;
         public ManifestMod Remote;
 
         public string Id => Remote.id;
@@ -141,6 +140,7 @@ namespace BigWalkVRInstaller
         public bool ShowUpdate => !Busy && CanUpdate;
         public bool ShowCurrent => !Busy && IsCurrent;
         public bool ShowUninstall => !Busy && IsInstalled;
+        public bool ShowChannels => !Busy && Available.HasNewerBeta;
 
         public string Subtitle
         {
@@ -164,7 +164,7 @@ namespace BigWalkVRInstaller
         void NotifyState()
         {
             foreach (var name in new[] { nameof(IsInstalled), nameof(ChannelMismatch), nameof(CanUpdate), nameof(IsCurrent),
-                nameof(ShowInstall), nameof(ShowUpdate), nameof(ShowCurrent), nameof(ShowUninstall), nameof(Subtitle),
+                nameof(ShowInstall), nameof(ShowUpdate), nameof(ShowCurrent), nameof(ShowUninstall), nameof(ShowChannels), nameof(Subtitle),
                 nameof(UpdateLabel) })
                 Notify(name);
         }

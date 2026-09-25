@@ -12,6 +12,7 @@ namespace BigWalkVRInstaller.Services
         public bool EnableBetaUpdates;
         public bool? BigWalkBetaUpdates;
         public bool? Titanfall2BetaUpdates;
+        public bool Titanfall2EaSignedIn;
 
         static string Dir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "BigWalkVRInstaller");
         static string FilePath => Path.Combine(Dir, "settings.json");
