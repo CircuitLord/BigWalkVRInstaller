@@ -33,6 +33,8 @@ namespace BigWalkVRInstaller.Installers
         public const string LauncherName = "Titanfall2VRLauncher.exe";
         public const string ProfileName = "TF2VR";
         public const string SteamAppId = "1237970";
+        // the plugin checks this code at startup
+        public const string AlphaCodePath = ProfileName + "/plugins/alpha-code.txt";
 
         static readonly SteamGameLocator Locator = new SteamGameLocator(
             "Titanfall2", "Titanfall2.exe", @"SOFTWARE\Respawn\Titanfall2", "Install Dir");
@@ -56,6 +58,16 @@ namespace BigWalkVRInstaller.Installers
             && File.Exists(Path.Combine(GamePath, ProfileName, "tools", "crash_monitor.exe"))
             && File.Exists(Path.Combine(GamePath, ProfileName, "tools", "launch.json"));
         public string InstalledVersion => IsInstalled ? Record.version : null;
+
+        public string AlphaCode
+        {
+            get
+            {
+                var path = Path.Combine(GamePath, AlphaCodePath);
+                return File.Exists(path) ? File.ReadAllText(path) : null;
+            }
+            set => File.WriteAllText(Path.Combine(GamePath, AlphaCodePath), value);
+        }
 
         public static ReleaseInfo PinnedNorthstar => new ReleaseInfo
         {

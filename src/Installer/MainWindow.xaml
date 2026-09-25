@@ -594,6 +594,8 @@
                 <StackPanel>
                     <TextBlock x:Name="ConfirmTitle" FontSize="14.5" FontWeight="SemiBold" />
                     <TextBlock x:Name="ConfirmText" FontSize="12.5" Foreground="{StaticResource TextDim}" TextWrapping="Wrap" Margin="0,7,0,0" />
+                    <TextBox x:Name="ConfirmInput" FontSize="14" Padding="8,6" Margin="0,14,0,0" MaxLength="6" Visibility="Collapsed"
+                             Background="{StaticResource Bg}" Foreground="{StaticResource Text}" BorderBrush="{StaticResource Stroke}" CaretBrush="{StaticResource Text}" />
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
                         <Button x:Name="ConfirmCancel" Style="{StaticResource Ghost}" Content="Cancel" Padding="16,7" Click="ConfirmCancel_Click" />
                         <Button x:Name="ConfirmOk" Style="{StaticResource Danger}" Padding="16,7" Margin="8,0,0,0" Click="ConfirmOk_Click" />

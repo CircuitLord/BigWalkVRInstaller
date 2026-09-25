@@ -566,6 +566,9 @@ namespace BigWalkVRInstaller
         {
             if (_selectedGame == SelectedGame.Titanfall2)
             {
+                var alphaCode = await AskAlphaCode(_titanfall.AlphaCode);
+                if (alphaCode == null) return;
+                _titanfall.AlphaCode = alphaCode;
                 LaunchButton.IsEnabled = false;
                 try
                 {
@@ -930,9 +933,20 @@ namespace BigWalkVRInstaller
             ConfirmOk.Content = okLabel;
             ConfirmCancel.Content = cancelLabel;
             ConfirmOk.Style = (Style)FindResource(danger ? "Danger" : "Primary");
+            ConfirmInput.Visibility = Visibility.Collapsed;
             ConfirmOverlay.Visibility = Visibility.Visible;
             _confirm = new TaskCompletionSource<bool>();
             return _confirm.Task;
+        }
+
+        async Task<string> AskAlphaCode(string saved)
+        {
+            var answer = Confirm("Alpha tester code", "Enter the 6 digit code from the alpha tester channel.", "Continue", danger: false);
+            ConfirmInput.Text = saved ?? "";
+            ConfirmInput.SelectAll();
+            ConfirmInput.Visibility = Visibility.Visible;
+            ConfirmInput.Focus();
+            return await answer ? ConfirmInput.Text : null;
         }
 
         void CloseConfirm(bool result)
